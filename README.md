@@ -14,4 +14,11 @@
   * Realitic balancing (Ecosystems that resemble real ones)
   * **Javascript Version???**
 
+### If you want to help
+  Download Processing 2 and add the guido library through Sketch > Import Library > Add Library... 
+  Processing is based off of java and is a bit like a library/IDE that makes doing graphics much easier.
+  You could try using the latest Processing 3 but I am not sure if guido works with it.
+  
+  You can contact me at domceb@gmail.com if you wish to discuss more.
+
 **Written in Processing 2 with Guido**
