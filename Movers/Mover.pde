@@ -61,8 +61,8 @@ class Mover {
     if (mass <= DIVSIZE) {
       for (int j = 0; j < plants.size(); j++) {
         if (!this.equals(plants.get(j))) {
-          consider(plants.get(j));
-          slurp(plants.get(j));
+          considerP(plants.get(j));
+          slurpP(plants.get(j));
         }
       }
     }
@@ -148,7 +148,7 @@ class Mover {
     }
   }
   
-  void consider(Plant m) {
+  void considerP(Plant m) {
     PVector pointer = PVector.sub(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
@@ -158,7 +158,7 @@ class Mover {
     if (strength != 0) addTarget(pointer, strength);
   }
   
-  void slurp(Plant m) {
+  void slurpP(Plant m) {
     float distance = PVector.sub(m.location, location).mag();
     if (distance <= radius + m.radius) {
       float slurp = 0;
