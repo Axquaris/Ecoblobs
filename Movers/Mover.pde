@@ -48,9 +48,13 @@ class Mover {
     target.mult(0);
     tDivisor = 0;
 
-    if (mass < 50) return true; //Self destruct
+    if (mass < 20) return true; //Self destruct
+    //Division test
+    else if (mass > DIVSIZE && closestThreat > 500) {
+      divide();
+    }
     
-    closestThreat = 9999;
+    closestThreat = 1000;
     
     for (int j = 0; j < movers.size(); j++) {
       if (!this.equals(movers.get(j))) {
@@ -84,17 +88,10 @@ class Mover {
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
     
-      //target.mult(0);
-      //tDivisor = 0;
     acceleration.mult(0);
     
     mass *= metabolismRate;
     radius = sqrt(mass/PI);
-    
-    //Division test
-    if (mass > DIVSIZE && closestThreat > 100) {
-      divide();
-    }
     
     return false;
   }
@@ -103,9 +100,9 @@ class Mover {
     radius = sqrt(mass/PI);
     stroke(0);
     strokeWeight(2);
-    fill(0, 50 + 100*(mass/DIVSIZE));
-    line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
+    fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
+    line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
   }
   
   void consider(Mover m) {
@@ -117,12 +114,12 @@ class Mover {
     //AI decisions
     if (mass <= DIVSIZE) {
       if (mass > m.mass * NOMFACTOR) strength = m.mass/pow(distance, 2);
-      else if (m.mass > mass * NOMFACTOR) strength = -m.mass/distance/distance;
+      else if (m.mass > mass * NOMFACTOR * .9) strength = -m.mass*500/distance/distance/distance;
       else if (distance < 3*(radius + m.radius)) strength = -10000/distance/distance/distance;
       else strength = 0;
     }
     else {
-      if (m.mass > mass * 0.5) {
+      if (m.mass > mass * 0.25) {
         strength = -m.mass/distance/distance;
         if (distance < closestThreat) closestThreat = distance;
         else if (distance < 3*(radius + m.radius)) strength = -10000/distance/distance/distance;
@@ -170,23 +167,22 @@ class Mover {
     if (distance <= radius + m.radius) {
       float slurp = 0;
       
-      if (m.mass <= mass/25) slurp = m.mass;
-      else slurp = mass/25;
+      if (m.mass <= mass/50) slurp = m.mass;
+      else slurp = mass/50;
       if (mass + slurp > DIVSIZE*1.1) slurp = DIVSIZE*1.1 - mass + 1;
       
       m.mass -= slurp;
-      mass += slurp;
+      mass += slurp*0.5;
       m.radius = sqrt(m.mass/PI);
     }
   }
   
   void divide() {
     velocity.mult(-1);
-    movers.add(new Mover(mass*0.5, location.x-5, location.y, velocity));
+    movers.add(new Mover(mass*0.5, location.x, location.y, velocity));
     velocity.mult(-1);
     
     mass *= 0.5;
-    location.x += 5;
     radius = sqrt(mass/PI);
   }
 

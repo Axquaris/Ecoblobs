@@ -53,17 +53,17 @@ public class UiGrapherII{
   }
   
   void render(){
-    fill(149, 90, 1, 150);
+    fill(173, 117, 77);
     rect(x, y, w, h);
     stroke(0);
     strokeWeight(3);
     //Draws graphs
     for (int i = 0; i < pNA-1; i++) {
-      line(x+numberEdge+i, getPosA(i)-h/2, x+numberEdge+(i+1), getPosA(i+1)-h/2);
+      line(x+numberEdge+i, getPosA(i), x+numberEdge+(i+1), getPosA(i+1));
     }
     stroke(66, 110, 36);
     for (int i = 0; i < pNB-1; i++) {
-      line(x+numberEdge+i, getPosB(i)-h/2, x+numberEdge+(i+1), getPosB(i+1)-h/2);
+      line(x+numberEdge+i, getPosB(i), x+numberEdge+(i+1), getPosB(i+1));
     }
     stroke(0);
     strokeWeight(1);
@@ -83,14 +83,14 @@ public class UiGrapherII{
   int getPosA(int i) {
     float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
     n *= -1;
-    n += x + h - edge + titleEdge;
+    n += x + h - edge;
     
     return round(n);
   }
   int getPosB(int i) {
     float n = map(pointsB[i], min, max, 0, h-edge-titleEdge);
     n *= -1;
-    n += x + h - edge + titleEdge;
+    n += x + h - edge;
     
     return round(n);
   }

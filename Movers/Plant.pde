@@ -11,12 +11,12 @@ class Plant {
   }
   
   boolean update() {
-    if (mass < 50) return true; //Self-destruct
+    if (mass < 20) return true; //Self-destruct
     
     //Growth limitation
-    if (mass < 5000) mass *= growthRate;
+    if (mass < DIVSIZE*2) mass *= growthRate;
     else {
-      float g = map(mass, 5000, 50000, 0, growthRate-1);
+      float g = map(mass, DIVSIZE*2, 10000, 0, growthRate-1);
       mass *= growthRate - g;
     }
     
@@ -26,9 +26,9 @@ class Plant {
 
   void display() {
     radius = sqrt(mass/PI);
-    stroke(0);
+    stroke(43, 71, 20);
     strokeWeight(2);
-    fill(93, 156, 51, 250);
+    fill(93, 156, 51, 240);
     ellipse(location.x, location.y, radius, radius);
   }
 }
