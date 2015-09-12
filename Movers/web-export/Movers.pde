@@ -23,14 +23,16 @@ UiSlider plantsMCtrl;
 UiGrapherII graph;
 
 void setup() {
-  size(1200,900);
-  sHeight = 800;
+  frameRate(30);
+  size(1000,800);
+  sHeight = 700;
   sWidth = width;
   ellipseMode(RADIUS);
   
   metabolismRate = 0.998;
   growthRate = 1.01;
   
+  //Create Blobs
   movers = new ArrayList<Mover>();
   for (int i = 0; i < 30; i++) movers.add(new Mover(random(500,3000),random(width),random(sHeight)));
   plants = new ArrayList<Plant>();
@@ -40,12 +42,13 @@ void setup() {
   Interactive.make( this );
   setupUi();
   
-  //noLoop(); //Starts sketch paused for blog spoilers
+  //noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
   background(255);
   
+  //Update Movers
   float mMass = 0;
   for (int i = 0; i < movers.size(); i++) {
     if(movers.get(i).update()) movers.remove(i);
@@ -53,6 +56,7 @@ void draw() {
   }
   graph.plotA(mMass);
   
+  //Update Plants
   float pMass = 0;
   for (int i = 0; i < plants.size(); i++) {
     if(plants.get(i).update()) {
@@ -63,9 +67,11 @@ void draw() {
   }
   graph.plotB(pMass);
   
+  //Display blobs
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
   for (int i = 0; i < plants.size(); i++) plants.get(i).display();
   
+  //GUI
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
   
@@ -87,14 +93,15 @@ void setupUi() {
   plantsMCtrl.button = color(93, 156, 51, 250);
   plantsMCtrl.buttonW = plantsMCtrl.height*2;
   
-  graph = new UiGrapherII(670, sHeight-100, 530, 200, "Blob Masses");
+  graph = new UiGrapherII(670, sHeight-100, 330, 200, "Blob Masses");
 }
 
 class Mover {
 
   PVector location;
-  PVector velocity, debug;
+  PVector velocity, noseEnd;
   PVector acceleration;
+  //Vars to calculate target
   PVector target;
   float tDivisor;
   
@@ -108,7 +115,7 @@ class Mover {
     
     location = new PVector(x, y);
     velocity = new PVector(0, 0);
-    debug = new PVector(0, 0);
+    noseEnd = new PVector(0, 0);
     acceleration = new PVector(0, 0);
     target = new PVector(0, 0);
     tDivisor = 0;
@@ -122,7 +129,7 @@ class Mover {
     
     location = new PVector(x, y);
     this.velocity = new PVector(velocity.x, velocity.y);
-    debug = new PVector(0, 0);
+    noseEnd = new PVector(0, 0);
     acceleration = new PVector(0, 0);
     target = new PVector(0, 0);
     tDivisor = 0;
@@ -136,11 +143,10 @@ class Mover {
   }
 
   boolean update() {
-    ///////////////
     target.mult(0);
     tDivisor = 0;
-    ///////////////
-    if (mass < 50) return true;
+
+    if (mass < 50) return true; //Self destruct
     
     closestThreat = 9999;
     
@@ -158,12 +164,14 @@ class Mover {
         }
       }
     }
-  
+    
+    //TODO create a considerBoundaries() function to do below with better integreation
     if (location.x < BORDERSIZE) velocity.x += pow(-location.x+BORDERSIZE, 1);
     else if (location.x > width-BORDERSIZE) velocity.x -= pow(location.x-(width-BORDERSIZE), 1);
     if (location.y < BORDERSIZE) velocity.y += pow(-location.y+BORDERSIZE, 1);
     else if (location.y > sHeight-BORDERSIZE) velocity.y -= pow(location.y-(sHeight-BORDERSIZE), 1);
     
+    //Movement Calculations
     target.div(tDivisor);
     acceleration = target;
     acceleration.setMag((mass*200)/DIVSIZE);
@@ -171,16 +179,17 @@ class Mover {
     acceleration.div(mass);
     velocity.add(acceleration);
     velocity.limit(1+mass/DIVSIZE);
-    debug = new PVector(velocity.x*radius, velocity.y*radius);
+    noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
     
-    //target.mult(0);
-    //tDivisor = 0;
+      //target.mult(0);
+      //tDivisor = 0;
     acceleration.mult(0);
     
     mass *= metabolismRate;
     radius = sqrt(mass/PI);
     
+    //Division test
     if (mass > DIVSIZE && closestThreat > 100) {
       divide();
     }
@@ -193,10 +202,7 @@ class Mover {
     stroke(0);
     strokeWeight(2);
     fill(0, 50 + 100*(mass/DIVSIZE));
-    line(location.x, location.y, location.x+debug.x, location.y+debug.y);
-    ///////////////////////////////////////////////////////////////////////
-    line(location.x, location.y, location.x+target.x, location.y+target.y);
-    ///////////////////////////////////////////////////////////////////////
+    line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
     ellipse(location.x, location.y, radius, radius);
   }
   
@@ -206,6 +212,7 @@ class Mover {
     distance = constrain(distance, 5.0, 3000.0);
     float strength;
     
+    //AI decisions
     if (mass <= DIVSIZE) {
       if (mass > m.mass * NOMFACTOR) strength = m.mass/pow(distance, 2);
       else if (m.mass > mass * NOMFACTOR) strength = -m.mass/distance/distance;
@@ -221,7 +228,9 @@ class Mover {
       else strength = 0;
     }
     
-    pointer.mult(strength);
+    //Set importance of target
+    pointer.setMag(strength);
+    //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
   
@@ -244,9 +253,13 @@ class Mover {
     PVector pointer = PVector.sub(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
+    
+    //AI decision
     float strength = m.mass/pow(distance, 2);
     
-    pointer.mult(strength);
+    //Set importance of target
+    pointer.setMag(strength);
+    //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
   
@@ -289,13 +302,15 @@ class Plant {
   }
   
   boolean update() {
-    if (mass < 50) return true;
-
+    if (mass < 50) return true; //Self-destruct
+    
+    //Growth limitation
     if (mass < 5000) mass *= growthRate;
     else {
       float g = map(mass, 5000, 50000, 0, growthRate-1);
       mass *= growthRate - g;
     }
+    
     radius = sqrt(mass/PI);
     return false;
   }
@@ -318,8 +333,9 @@ public class UiButton {
         Interactive.add( this );
     }
     
+    
     public void mousePressed ( float mx, float my ) {
-        //ESSENTIALLY A RESET
+        //Resets simulation when button is pressed
         movers = new ArrayList<Mover>();
         for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(500,3000),random(sWidth),random(sHeight)));
         plants = new ArrayList<Plant>();
@@ -385,6 +401,7 @@ public class UiGrapherII{
       pNA++;
     }
   }
+  
   void plotB (float p){
     for (int i = pointsB.length-1; i > 0; i--) {
       pointsB[i] = pointsB[i-1];
@@ -402,13 +419,14 @@ public class UiGrapherII{
     fill(149, 90, 1, 150);
     rect(x, y, w, h);
     stroke(0);
-    strokeWeight(4);
+    strokeWeight(3);
+    //Draws graphs
     for (int i = 0; i < pNA-1; i++) {
-      line(x+numberEdge+i, getPosA(i), x+numberEdge+(i+1), getPosA(i+1));
+      line(x+numberEdge+i, getPosA(i)-h/2, x+numberEdge+(i+1), getPosA(i+1)-h/2);
     }
     stroke(66, 110, 36);
     for (int i = 0; i < pNB-1; i++) {
-      line(x+numberEdge+i, getPosB(i), x+numberEdge+(i+1), getPosB(i+1));
+      line(x+numberEdge+i, getPosB(i)-h/2, x+numberEdge+(i+1), getPosB(i+1)-h/2);
     }
     stroke(0);
     strokeWeight(1);

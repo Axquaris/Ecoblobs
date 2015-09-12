@@ -1,8 +1,9 @@
 class Mover {
 
   PVector location;
-  PVector velocity, debug;
+  PVector velocity, noseEnd;
   PVector acceleration;
+  //Vars to calculate target
   PVector target;
   float tDivisor;
   
@@ -16,7 +17,7 @@ class Mover {
     
     location = new PVector(x, y);
     velocity = new PVector(0, 0);
-    debug = new PVector(0, 0);
+    noseEnd = new PVector(0, 0);
     acceleration = new PVector(0, 0);
     target = new PVector(0, 0);
     tDivisor = 0;
@@ -30,7 +31,7 @@ class Mover {
     
     location = new PVector(x, y);
     this.velocity = new PVector(velocity.x, velocity.y);
-    debug = new PVector(0, 0);
+    noseEnd = new PVector(0, 0);
     acceleration = new PVector(0, 0);
     target = new PVector(0, 0);
     tDivisor = 0;
@@ -44,11 +45,10 @@ class Mover {
   }
 
   boolean update() {
-    ///////////////
     target.mult(0);
     tDivisor = 0;
-    ///////////////
-    if (mass < 50) return true;
+
+    if (mass < 50) return true; //Self destruct
     
     closestThreat = 9999;
     
@@ -66,12 +66,14 @@ class Mover {
         }
       }
     }
-  
+    
+    //TODO create a considerBoundaries() function to do below with better integreation
     if (location.x < BORDERSIZE) velocity.x += pow(-location.x+BORDERSIZE, 1);
     else if (location.x > width-BORDERSIZE) velocity.x -= pow(location.x-(width-BORDERSIZE), 1);
     if (location.y < BORDERSIZE) velocity.y += pow(-location.y+BORDERSIZE, 1);
     else if (location.y > sHeight-BORDERSIZE) velocity.y -= pow(location.y-(sHeight-BORDERSIZE), 1);
     
+    //Movement Calculations
     target.div(tDivisor);
     acceleration = target;
     acceleration.setMag((mass*200)/DIVSIZE);
@@ -79,16 +81,17 @@ class Mover {
     acceleration.div(mass);
     velocity.add(acceleration);
     velocity.limit(1+mass/DIVSIZE);
-    debug = new PVector(velocity.x*radius, velocity.y*radius);
+    noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
     
-    //target.mult(0);
-    //tDivisor = 0;
+      //target.mult(0);
+      //tDivisor = 0;
     acceleration.mult(0);
     
     mass *= metabolismRate;
     radius = sqrt(mass/PI);
     
+    //Division test
     if (mass > DIVSIZE && closestThreat > 100) {
       divide();
     }
@@ -101,10 +104,7 @@ class Mover {
     stroke(0);
     strokeWeight(2);
     fill(0, 50 + 100*(mass/DIVSIZE));
-    line(location.x, location.y, location.x+debug.x, location.y+debug.y);
-    ///////////////////////////////////////////////////////////////////////
-    line(location.x, location.y, location.x+target.x, location.y+target.y);
-    ///////////////////////////////////////////////////////////////////////
+    line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
     ellipse(location.x, location.y, radius, radius);
   }
   
@@ -114,6 +114,7 @@ class Mover {
     distance = constrain(distance, 5.0, 3000.0);
     float strength;
     
+    //AI decisions
     if (mass <= DIVSIZE) {
       if (mass > m.mass * NOMFACTOR) strength = m.mass/pow(distance, 2);
       else if (m.mass > mass * NOMFACTOR) strength = -m.mass/distance/distance;
@@ -129,7 +130,9 @@ class Mover {
       else strength = 0;
     }
     
-    pointer.mult(strength);
+    //Set importance of target
+    pointer.setMag(strength);
+    //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
   
@@ -152,9 +155,13 @@ class Mover {
     PVector pointer = PVector.sub(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
+    
+    //AI decision
     float strength = m.mass/pow(distance, 2);
     
-    pointer.mult(strength);
+    //Set importance of target
+    pointer.setMag(strength);
+    //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
   

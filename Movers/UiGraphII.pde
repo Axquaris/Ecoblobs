@@ -38,6 +38,7 @@ public class UiGrapherII{
       pNA++;
     }
   }
+  
   void plotB (float p){
     for (int i = pointsB.length-1; i > 0; i--) {
       pointsB[i] = pointsB[i-1];
@@ -55,13 +56,14 @@ public class UiGrapherII{
     fill(149, 90, 1, 150);
     rect(x, y, w, h);
     stroke(0);
-    strokeWeight(4);
+    strokeWeight(3);
+    //Draws graphs
     for (int i = 0; i < pNA-1; i++) {
-      line(x+numberEdge+i, getPosA(i), x+numberEdge+(i+1), getPosA(i+1));
+      line(x+numberEdge+i, getPosA(i)-h/2, x+numberEdge+(i+1), getPosA(i+1)-h/2);
     }
     stroke(66, 110, 36);
     for (int i = 0; i < pNB-1; i++) {
-      line(x+numberEdge+i, getPosB(i), x+numberEdge+(i+1), getPosB(i+1));
+      line(x+numberEdge+i, getPosB(i)-h/2, x+numberEdge+(i+1), getPosB(i+1)-h/2);
     }
     stroke(0);
     strokeWeight(1);
