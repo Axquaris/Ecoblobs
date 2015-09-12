@@ -23,14 +23,16 @@ UiSlider plantsMCtrl;
 UiGrapherII graph;
 
 void setup() {
-  size(1200,900);
-  sHeight = 800;
+  frameRate(30);
+  size(1000,800);
+  sHeight = 700;
   sWidth = width;
   ellipseMode(RADIUS);
   
   metabolismRate = 0.998;
   growthRate = 1.01;
   
+  //Create Blobs
   movers = new ArrayList<Mover>();
   for (int i = 0; i < 30; i++) movers.add(new Mover(random(500,3000),random(width),random(sHeight)));
   plants = new ArrayList<Plant>();
@@ -40,12 +42,13 @@ void setup() {
   Interactive.make( this );
   setupUi();
   
-  //noLoop(); //Starts sketch paused for blog spoilers
+  //noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
   background(255);
   
+  //Update Movers
   float mMass = 0;
   for (int i = 0; i < movers.size(); i++) {
     if(movers.get(i).update()) movers.remove(i);
@@ -53,6 +56,7 @@ void draw() {
   }
   graph.plotA(mMass);
   
+  //Update Plants
   float pMass = 0;
   for (int i = 0; i < plants.size(); i++) {
     if(plants.get(i).update()) {
@@ -63,9 +67,11 @@ void draw() {
   }
   graph.plotB(pMass);
   
+  //Display blobs
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
   for (int i = 0; i < plants.size(); i++) plants.get(i).display();
   
+  //GUI
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
   
@@ -87,6 +93,6 @@ void setupUi() {
   plantsMCtrl.button = color(93, 156, 51, 250);
   plantsMCtrl.buttonW = plantsMCtrl.height*2;
   
-  graph = new UiGrapherII(670, sHeight-100, 530, 200, "Blob Masses");
+  graph = new UiGrapherII(670, sHeight-100, 330, 200, "Blob Masses");
 }
 

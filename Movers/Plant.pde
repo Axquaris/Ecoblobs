@@ -11,13 +11,15 @@ class Plant {
   }
   
   boolean update() {
-    if (mass < 50) return true;
-
+    if (mass < 50) return true; //Self-destruct
+    
+    //Growth limitation
     if (mass < 5000) mass *= growthRate;
     else {
       float g = map(mass, 5000, 50000, 0, growthRate-1);
       mass *= growthRate - g;
     }
+    
     radius = sqrt(mass/PI);
     return false;
   }

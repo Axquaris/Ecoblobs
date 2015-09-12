@@ -8,8 +8,9 @@ public class UiButton {
         Interactive.add( this );
     }
     
+    
     public void mousePressed ( float mx, float my ) {
-        //ESSENTIALLY A RESET
+        //Resets simulation when button is pressed
         movers = new ArrayList<Mover>();
         for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(500,3000),random(sWidth),random(sHeight)));
         plants = new ArrayList<Plant>();
