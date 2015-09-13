@@ -1,5 +1,5 @@
 # Ecoblobs
-  This is a project I have been working on during the summer and in my free time. The idea of the project is to create a simulation of a life-like ecosystem of critters, however due to my limited graphical skills animals and plants are represented by blobs. To see updates go to my blog: http://processingxp.blogspot.com/
+  This is a project I have been working on during the summer and in my free time. The idea of the project is to create a simulation of a life-like ecosystem of critters, however due to my limited graphical skills animals and plants are represented by blobs.
 
 ### Current Features
   * GUI that allows the user to tweak some simple variables and see the relative total masses of movers and plants
