@@ -204,41 +204,61 @@ class Mover {
   //Find the shortest path between 2 objects on torus
   PVector torusPointer(PVector p1, PVector p2) {
     float x, y;
+    float a, b;
     
     //Determine x
-    if (p1.x - p2.x <= (sWidth) - abs(p1.x - p2.x)) {
-      x = p1.x - p2.x;
+    if (p1.x > p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x+sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
     }
-    else {
-      x = (sWidth) - abs(p1.x - p2.x);
-      if (p1.x - p2.x > 0) x *= -1;
+    else if (p1.x < p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x-sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
     }
+    else x = 0;
     
     //Determine y
-    if (p1.y - p2.y <= (sHeight) - abs(p1.y - p2.y)) {
-      y = p1.y - p2.y;
+    if (p1.y > p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y+sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
     }
-    else {
-      y = (sHeight) - abs(p1.y - p2.y);
-      if (p1.y - p2.y > 0) y *= -1;
+    else if (p1.y < p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y-sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
     }
+    else y = 0;
     
     return new PVector(x, y);
   }
   
   //Display toriod ghost if applicable
-  void displayGhost() {
-    if (ghostX != 0 || ghostY != 0) {
-      int xShift = ghostX * sWidth;
-      int yShift = ghostY * sHeight;
-      
-      radius = sqrt(mass/PI);
-      stroke(0);
-      strokeWeight(2);
-      fill(150 - 100*(mass/DIVSIZE), 200);
-      ellipse(location.x+xShift, location.y+yShift, radius, radius);
-      line(location.x+xShift, location.y+yShift, location.x+xShift+noseEnd.x, location.y+yShift+noseEnd.y);
+  void displayGhosts() {
+    radius = sqrt(mass/PI);
+    stroke(0);
+    strokeWeight(2);
+    fill(150 - 100*(mass/DIVSIZE), 200);
+    
+    if (ghostX != 0 && ghostY != 0) {
+      displayGhost(ghostX*sWidth, 0);
+      displayGhost(0, ghostY * sHeight);
+      displayGhost(ghostX*sWidth, ghostY * sHeight);
     }
+    else if (ghostX != 0) displayGhost(ghostX*sWidth, 0);
+    else if (ghostY != 0) displayGhost(0, ghostY * sHeight);
+  }
+  
+  //Subfunction for displayGhost
+  void displayGhost(int xShift, int yShift) {
+    ellipse(location.x+xShift, location.y+yShift, radius, radius);
+    line(location.x+xShift, location.y+yShift, location.x+xShift+noseEnd.x, location.y+yShift+noseEnd.y);
   }
   
   //Makes sketch even more torrific than before :D
