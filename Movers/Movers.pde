@@ -69,8 +69,9 @@ void draw() {
   
   //Display blobs
   for (int i = 0; i < plants.size(); i++) plants.get(i).display();
+  for (int i = 0; i < movers.size(); i++) movers.get(i).displayGhost();
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
-  
+
   //GUI
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
