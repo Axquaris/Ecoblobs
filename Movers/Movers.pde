@@ -7,7 +7,7 @@ final static float NOMFACTOR = 1.2; //if (myMass > itsMass * NOMFACTOR) then its
 float metabolismRate, growthRate;
 
   
-final float BORDERSIZE = (1/4)*(width+sHeight)/2;
+final float BORDERSIZE = sqrt(DIVSIZE/PI);
   
 public ArrayList<Mover> movers = new ArrayList<Mover>();
 public ArrayList<Plant> plants = new ArrayList<Plant>();
@@ -34,7 +34,7 @@ void setup() {
   
   //Create Blobs
   movers = new ArrayList<Mover>();
-  for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(width),random(sHeight)));
+  for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
   plants = new ArrayList<Plant>();
   for (int i = 0; i < 5; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
   
@@ -74,7 +74,7 @@ void draw() {
   //GUI
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
-  
+
   graph.render();
 }
 
@@ -82,7 +82,7 @@ void setupUi() {
   reset = new UiButton ( 10, sHeight+10, 120, 80, "RESET");
   moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 30/100, 100, 35 );
   moversCtrl.button = color(75);
-  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 4/10, 10, 35 );
+  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 5/10, 10, 35 );
   plantsCtrl.button = color(93, 156, 51, 250);
   
   

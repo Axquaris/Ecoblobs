@@ -79,14 +79,15 @@ public class UiGrapherII{
     text(round(max), x+numberEdge, y+titleEdge/2);
     text(round(min), x+numberEdge, y+h-edge/2);
   }
-  
-  int getPosA(int i) {
-    float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
-    n *= -1;
-    n += x + h - edge;
     
-    return round(n);
+  int getPosA(int i) {
+      float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
+      n *= -1;
+      n += x + h - edge;
+      
+      return round(n);
   }
+    
   int getPosB(int i) {
     float n = map(pointsB[i], min, max, 0, h-edge-titleEdge);
     n *= -1;

@@ -7,7 +7,7 @@ final static float NOMFACTOR = 1.2; //if (myMass > itsMass * NOMFACTOR) then its
 float metabolismRate, growthRate;
 
   
-final float BORDERSIZE = (1/4)*(width+sHeight)/2;
+final float BORDERSIZE = sqrt(DIVSIZE/PI);
   
 public ArrayList<Mover> movers = new ArrayList<Mover>();
 public ArrayList<Plant> plants = new ArrayList<Plant>();
@@ -34,7 +34,7 @@ void setup() {
   
   //Create Blobs
   movers = new ArrayList<Mover>();
-  for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(width),random(sHeight)));
+  for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
   plants = new ArrayList<Plant>();
   for (int i = 0; i < 5; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
   
@@ -74,7 +74,7 @@ void draw() {
   //GUI
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
-  
+
   graph.render();
 }
 
@@ -82,7 +82,7 @@ void setupUi() {
   reset = new UiButton ( 10, sHeight+10, 120, 80, "RESET");
   moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 30/100, 100, 35 );
   moversCtrl.button = color(75);
-  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 4/10, 10, 35 );
+  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 5/10, 10, 35 );
   plantsCtrl.button = color(93, 156, 51, 250);
   
   
@@ -98,7 +98,7 @@ void setupUi() {
 
 class Mover {
 
-  PVector location;
+        PVector location;
   PVector velocity, noseEnd;
   PVector acceleration;
   //Vars to calculate target
@@ -143,14 +143,12 @@ class Mover {
   }
 
   boolean update() {
+    //Reset vars
     target.mult(0);
     tDivisor = 0;
+    acceleration.mult(0);
 
     if (mass < 20) return true; //Self destruct
-    //Division test
-    else if (mass > DIVSIZE && closestThreat > 500) {
-      divide();
-    }
     
     closestThreat = 1000;
     
@@ -160,20 +158,12 @@ class Mover {
         slurp(movers.get(j));
       }
     }
-    if (mass <= DIVSIZE) {
-      for (int j = 0; j < plants.size(); j++) {
-        if (!this.equals(plants.get(j))) {
-          considerP(plants.get(j));
-          slurpP(plants.get(j));
-        }
+    for (int j = 0; j < plants.size(); j++) {
+      if (!this.equals(plants.get(j))) {
+        if (mass <= DIVSIZE) considerP(plants.get(j));
+        slurpP(plants.get(j));
       }
     }
-    
-    //TODO create a considerBoundaries() function to do below with better integreation
-    if (location.x < BORDERSIZE) velocity.x += pow(-location.x+BORDERSIZE, 1);
-    else if (location.x > width-BORDERSIZE) velocity.x -= pow(location.x-(width-BORDERSIZE), 1);
-    if (location.y < BORDERSIZE) velocity.y += pow(-location.y+BORDERSIZE, 1);
-    else if (location.y > sHeight-BORDERSIZE) velocity.y -= pow(location.y-(sHeight-BORDERSIZE), 1);
     
     //Movement Calculations
     target.div(tDivisor);
@@ -186,8 +176,18 @@ class Mover {
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
     
-    acceleration.mult(0);
+    //Torification :)
+    if (location.x + BORDERSIZE <= 0) location.x += sWidth + BORDERSIZE*2;
+    else if (location.x - BORDERSIZE >= sWidth) location.x -= sWidth + BORDERSIZE*2;
+    if (location.y + BORDERSIZE <= 0) location.y += sHeight + BORDERSIZE*2;
+    else if (location.y - BORDERSIZE >= sHeight) location.y -= sHeight + BORDERSIZE*2;
     
+    //Division test
+    if (mass > DIVSIZE && closestThreat > 100) {
+      divide();
+    }
+    
+    //Consider Metabolism
     mass *= metabolismRate;
     radius = sqrt(mass/PI);
     
@@ -204,7 +204,7 @@ class Mover {
   }
   
   void consider(Mover m) {
-    PVector pointer = PVector.sub(m.location, location);
+    PVector pointer = torusPointer(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
     float strength;
@@ -212,16 +212,21 @@ class Mover {
     //AI decisions
     if (mass <= DIVSIZE) {
       if (mass > m.mass * NOMFACTOR) strength = m.mass/pow(distance, 2);
-      else if (m.mass > mass * NOMFACTOR * .9) strength = -m.mass*500/distance/distance/distance;
+      else if (m.mass > mass * NOMFACTOR * .9) {
+        strength = -m.mass*500/distance/distance/distance;
+        if (m.mass > mass * 0.4 && distance < closestThreat) closestThreat = distance;
+      }
       else if (distance < 3*(radius + m.radius)) strength = -10000/distance/distance/distance;
       else strength = 0;
+      
+      if (distance < closestThreat) closestThreat = distance;
     }
     else {
-      if (m.mass > mass * 0.25) {
+      if (m.mass > mass * 0.4) {
         strength = -m.mass/distance/distance;
         if (distance < closestThreat) closestThreat = distance;
-        else if (distance < 3*(radius + m.radius)) strength = -10000/distance/distance/distance;
       }
+      else if (distance < 3*(radius + m.radius) && distance >= closestThreat) strength = -10000/distance/distance/distance;
       else strength = 0;
     }
     
@@ -232,13 +237,13 @@ class Mover {
   }
   
   void slurp(Mover m) {
-    float distance = PVector.sub(m.location, location).mag();
+    float distance = torusPointer(m.location, location).mag();
     if (distance <= radius + m.radius && mass > m.mass * NOMFACTOR) {
       float slurp = 0;
       
       if (m.mass <= mass/25) slurp = m.mass;
       else slurp = mass/25;
-      if (mass + slurp > DIVSIZE*1.1) slurp = DIVSIZE*1.1 - mass + 1;
+      if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
       
       m.mass -= slurp;
       mass += slurp;
@@ -247,12 +252,12 @@ class Mover {
   }
   
   void considerP(Plant m) {
-    PVector pointer = PVector.sub(m.location, location);
+    PVector pointer = torusPointer(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
     
     //AI decision
-    float strength = m.mass/pow(distance, 2);
+    float strength = m.mass/pow(distance, 2)/2;
     
     //Set importance of target
     pointer.setMag(strength);
@@ -261,13 +266,13 @@ class Mover {
   }
   
   void slurpP(Plant m) {
-    float distance = PVector.sub(m.location, location).mag();
+    float distance = torusPointer(m.location, location).mag();
     if (distance <= radius + m.radius) {
       float slurp = 0;
       
       if (m.mass <= mass/50) slurp = m.mass;
       else slurp = mass/50;
-      if (mass + slurp > DIVSIZE*1.1) slurp = DIVSIZE*1.1 - mass + 1;
+      if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
       
       m.mass -= slurp;
       mass += slurp*0.5;
@@ -283,7 +288,31 @@ class Mover {
     mass *= 0.5;
     radius = sqrt(mass/PI);
   }
-
+  
+  //Find the
+  PVector torusPointer(PVector p1, PVector p2) {
+    float x, y;
+    
+    //Determine x
+    if (p1.x - p2.x <= (sWidth+BORDERSIZE*2) - abs(p1.x - p2.x)) {
+      x = p1.x - p2.x;
+    }
+    else {
+      x = (sWidth+BORDERSIZE*2) - abs(p1.x - p2.x);
+      if (p1.x - p2.x > 0) x *= -1;
+    }
+    
+    //Determine y
+    if (p1.y - p2.y <= (sHeight+BORDERSIZE*2) - abs(p1.y - p2.y)) {
+      y = p1.y - p2.y;
+    }
+    else {
+      x = (sHeight+BORDERSIZE*2) - abs(p1.y - p2.y);
+      if (p1.y - p2.y > 0) y *= -1;
+    }
+    
+    return new PVector(x, y);
+  }
 }
 class Plant {
 
@@ -306,7 +335,7 @@ class Plant {
       float g = map(mass, DIVSIZE*2, 10000, 0, growthRate-1);
       mass *= growthRate - g;
     }
-    
+  
     radius = sqrt(mass/PI);
     return false;
   }
@@ -320,42 +349,42 @@ class Plant {
   }
 }
 public class UiButton {
-    float x, y, width, height;
-    String s;
-    boolean pressed;
+  float x, y, width, height;
+  String s;
+  boolean pressed;
+  
+  public UiButton ( float xx, float yy, float w, float h, String s ) {
+    x = xx; y = yy; width = w; height = h; this.s = s; pressed = false;
+    Interactive.add( this );
+  }
+  
+  
+  public void mousePressed ( float mx, float my ) {
+    //Resets simulation when button is pressed
+    movers = new ArrayList<Mover>();
+    for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
+    plants = new ArrayList<Plant>();
+    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
+    metabolismRate = moversMCtrl.value;
+    growthRate = plantsMCtrl.value;
+    graph.reset();
     
-    public UiButton ( float xx, float yy, float w, float h, String s ) {
-        x = xx; y = yy; width = w; height = h; this.s = s; pressed = false;
-        Interactive.add( this );
-    }
-    
-    
-    public void mousePressed ( float mx, float my ) {
-        //Resets simulation when button is pressed
-        movers = new ArrayList<Mover>();
-        for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
-        plants = new ArrayList<Plant>();
-        for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
-        metabolismRate = moversMCtrl.value;
-        growthRate = plantsMCtrl.value;
-        graph.reset();
-        
-        pressed = true;
-    }
+    pressed = true;
+  }
 
-    void draw () {
-        if ( !mousePressed ) pressed = false;
-        
-        if ( !pressed ) fill( 128 );
-        else fill( 80 );
-        
-        rect( x, y, width, height, (width+height)/2/10 );
-        fill( 0 );
-        textSize( 30 );
-        textAlign( CENTER, CENTER );
-        if ( pressed ) text( s, x+width/2, y+height/2);
-        else text( s, x+width/2, y+height/2);
-    }
+  void draw () {
+    if ( !mousePressed ) pressed = false;
+    
+    if ( !pressed ) fill( 128 );
+    else fill( 80 );
+    
+    rect( x, y, width, height, (width+height)/2/10 );
+    fill( 0 );
+    textSize( 30 );
+    textAlign( CENTER, CENTER );
+    if ( pressed ) text( s, x+width/2, y+height/2);
+    else text( s, x+width/2, y+height/2);
+  }
 }
 public class UiGrapherII{
   int x, y, w, h;
@@ -438,14 +467,15 @@ public class UiGrapherII{
     text(round(max), x+numberEdge, y+titleEdge/2);
     text(round(min), x+numberEdge, y+h-edge/2);
   }
-  
-  int getPosA(int i) {
-    float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
-    n *= -1;
-    n += x + h - edge;
     
-    return round(n);
+  int getPosA(int i) {
+      float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
+      n *= -1;
+      n += x + h - edge;
+      
+      return round(n);
   }
+    
   int getPosB(int i) {
     float n = map(pointsB[i], min, max, 0, h-edge-titleEdge);
     n *= -1;
@@ -465,88 +495,88 @@ public class UiGrapherII{
 }
 public class UiSlider
 {
-    float x, y, width, height;
-    float valueX = 0, value, mult;
-    color bar;
-    color button;
-    float buttonW;
+  float x, y, width, height;
+  float valueX = 0, value, mult;
+  color bar;
+  color button;
+  float buttonW;
+  
+  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) 
+  {
+    x = xx; 
+    y = yy; 
+    width = ww; 
+    height = hh;
     
-    public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) 
-    {
-        x = xx; 
-        y = yy; 
-        width = ww; 
-        height = hh;
-        
-        this.mult = mult;
-        this.value = value;
-        if (mult > 0) {
-          valueX  = map( value, 0, 1, x, x+width-buttonW );
-          
-        }
-        else if (mult == -1){
-          valueX = map( value, .95, 1, x, x+width-buttonW );
-        }
-        else {
-          valueX = map( value, 1, 1.05, x, x+width-buttonW );
-        }
-        
-        // register it
-        Interactive.add( this );
-        
-        bar = color(128);
-        button = color(190);
-        this.buttonW = buttonW;
+    this.mult = mult;
+    this.value = value;
+    if (mult > 0) {
+      valueX  = map( value, 0, 1, x, x+width-buttonW );
+      
+    }
+    else if (mult == -1){
+      valueX = map( value, .95, 1, x, x+width-buttonW );
+    }
+    else {
+      valueX = map( value, 1, 1.05, x, x+width-buttonW );
     }
     
-    // called from manager
-    void mouseDragged ( float mx, float my ) { update(mx, my); }
-    void mousePressed ( float mx, float my ) { update(mx, my); }
+    // register it
+    Interactive.add( this );
     
-    //Called when mouse clicked or dragged
-    void update ( float mx, float my ) {
-      valueX = mx - buttonW/2;
-      
-      if ( valueX < x ) valueX = x;
-      if ( valueX > x+width-buttonW ) valueX = x+width-buttonW;
-      
-      if (mult > 0)
-        value = map( valueX, x, x+width-buttonW, 0, 1 );
-      else if(mult == -1)
-        value = getMR();
-      else
-        value = getGR();
-    }
+    bar = color(128);
+    button = color(190);
+    this.buttonW = buttonW;
+  }
+  
+  // called from manager
+  void mouseDragged ( float mx, float my ) { update(mx, my); }
+  void mousePressed ( float mx, float my ) { update(mx, my); }
+  
+  //Called when mouse clicked or dragged
+  void update ( float mx, float my ) {
+    valueX = mx - buttonW/2;
+    
+    if ( valueX < x ) valueX = x;
+    if ( valueX > x+width-buttonW ) valueX = x+width-buttonW;
+    
+    if (mult > 0)
+      value = map( valueX, x, x+width-buttonW, 0, 1 );
+    else if(mult == -1)
+      value = getMR();
+    else
+      value = getGR();
+  }
 
-    public void draw () 
-    {
-        float f = 0.75; //How much smaller rail bar is
-        stroke(0);
-        fill( bar );
-        rect(x, y + (1-f)*height/2, width, height*f );
-        
-        stroke(0);
-        fill( button );
-        rect( valueX, y, buttonW , height );
-        
-        textSize( 20 );
-        textAlign( CENTER, CENTER );
-        fill(0);
-        if (mult > 0)
-          text( round(value*mult), valueX+buttonW/2, y+height/2);
-        else if (mult == -1)
-          text( getMR(), valueX+buttonW/2, y+height/2);
-        else
-          text( getGR(), valueX+buttonW/2, y+height/2);
-    }
+  public void draw () 
+  {
+    float f = 0.75; //How much smaller rail bar is
+    stroke(0);
+    fill( bar );
+    rect(x, y + (1-f)*height/2, width, height*f );
     
-    //Specific cases
-    float getMR() {
-      return 0.95+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
-    }
+    stroke(0);
+    fill( button );
+    rect( valueX, y, buttonW , height );
     
-    float getGR() {
-      return 1+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
-    }
+    textSize( 20 );
+    textAlign( CENTER, CENTER );
+    fill(0);
+    if (mult > 0)
+      text( round(value*mult), valueX+buttonW/2, y+height/2);
+    else if (mult == -1)
+      text( getMR(), valueX+buttonW/2, y+height/2);
+    else
+      text( getGR(), valueX+buttonW/2, y+height/2);
+  }
+  
+  //Specific cases
+  float getMR() {
+    return 0.95+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
+  }
+  
+  float getGR() {
+    return 1+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
+  }
 }
 

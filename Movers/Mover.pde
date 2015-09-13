@@ -1,6 +1,6 @@
 class Mover {
 
-  PVector location;
+        PVector location;
   PVector velocity, noseEnd;
   PVector acceleration;
   //Vars to calculate target
@@ -45,14 +45,12 @@ class Mover {
   }
 
   boolean update() {
+    //Reset vars
     target.mult(0);
     tDivisor = 0;
+    acceleration.mult(0);
 
     if (mass < 20) return true; //Self destruct
-    //Division test
-    else if (mass > DIVSIZE && closestThreat > 500) {
-      divide();
-    }
     
     closestThreat = 1000;
     
@@ -62,20 +60,12 @@ class Mover {
         slurp(movers.get(j));
       }
     }
-    if (mass <= DIVSIZE) {
-      for (int j = 0; j < plants.size(); j++) {
-        if (!this.equals(plants.get(j))) {
-          considerP(plants.get(j));
-          slurpP(plants.get(j));
-        }
+    for (int j = 0; j < plants.size(); j++) {
+      if (!this.equals(plants.get(j))) {
+        if (mass <= DIVSIZE) considerP(plants.get(j));
+        slurpP(plants.get(j));
       }
     }
-    
-    //TODO create a considerBoundaries() function to do below with better integreation
-    if (location.x < BORDERSIZE) velocity.x += pow(-location.x+BORDERSIZE, 1);
-    else if (location.x > width-BORDERSIZE) velocity.x -= pow(location.x-(width-BORDERSIZE), 1);
-    if (location.y < BORDERSIZE) velocity.y += pow(-location.y+BORDERSIZE, 1);
-    else if (location.y > sHeight-BORDERSIZE) velocity.y -= pow(location.y-(sHeight-BORDERSIZE), 1);
     
     //Movement Calculations
     target.div(tDivisor);
@@ -88,8 +78,18 @@ class Mover {
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
     
-    acceleration.mult(0);
+    //Torification :)
+    if (location.x + BORDERSIZE <= 0) location.x += sWidth + BORDERSIZE*2;
+    else if (location.x - BORDERSIZE >= sWidth) location.x -= sWidth + BORDERSIZE*2;
+    if (location.y + BORDERSIZE <= 0) location.y += sHeight + BORDERSIZE*2;
+    else if (location.y - BORDERSIZE >= sHeight) location.y -= sHeight + BORDERSIZE*2;
     
+    //Division test
+    if (mass > DIVSIZE && closestThreat > 100) {
+      divide();
+    }
+    
+    //Consider Metabolism
     mass *= metabolismRate;
     radius = sqrt(mass/PI);
     
@@ -106,7 +106,7 @@ class Mover {
   }
   
   void consider(Mover m) {
-    PVector pointer = PVector.sub(m.location, location);
+    PVector pointer = torusPointer(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
     float strength;
@@ -114,16 +114,21 @@ class Mover {
     //AI decisions
     if (mass <= DIVSIZE) {
       if (mass > m.mass * NOMFACTOR) strength = m.mass/pow(distance, 2);
-      else if (m.mass > mass * NOMFACTOR * .9) strength = -m.mass*500/distance/distance/distance;
+      else if (m.mass > mass * NOMFACTOR * .9) {
+        strength = -m.mass*500/distance/distance/distance;
+        if (m.mass > mass * 0.4 && distance < closestThreat) closestThreat = distance;
+      }
       else if (distance < 3*(radius + m.radius)) strength = -10000/distance/distance/distance;
       else strength = 0;
+      
+      if (distance < closestThreat) closestThreat = distance;
     }
     else {
-      if (m.mass > mass * 0.25) {
+      if (m.mass > mass * 0.4) {
         strength = -m.mass/distance/distance;
         if (distance < closestThreat) closestThreat = distance;
-        else if (distance < 3*(radius + m.radius)) strength = -10000/distance/distance/distance;
       }
+      else if (distance < 3*(radius + m.radius) && distance >= closestThreat) strength = -10000/distance/distance/distance;
       else strength = 0;
     }
     
@@ -134,13 +139,13 @@ class Mover {
   }
   
   void slurp(Mover m) {
-    float distance = PVector.sub(m.location, location).mag();
+    float distance = torusPointer(m.location, location).mag();
     if (distance <= radius + m.radius && mass > m.mass * NOMFACTOR) {
       float slurp = 0;
       
       if (m.mass <= mass/25) slurp = m.mass;
       else slurp = mass/25;
-      if (mass + slurp > DIVSIZE*1.1) slurp = DIVSIZE*1.1 - mass + 1;
+      if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
       
       m.mass -= slurp;
       mass += slurp;
@@ -149,12 +154,12 @@ class Mover {
   }
   
   void considerP(Plant m) {
-    PVector pointer = PVector.sub(m.location, location);
+    PVector pointer = torusPointer(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
     
     //AI decision
-    float strength = m.mass/pow(distance, 2);
+    float strength = m.mass/pow(distance, 2)/2;
     
     //Set importance of target
     pointer.setMag(strength);
@@ -163,13 +168,13 @@ class Mover {
   }
   
   void slurpP(Plant m) {
-    float distance = PVector.sub(m.location, location).mag();
+    float distance = torusPointer(m.location, location).mag();
     if (distance <= radius + m.radius) {
       float slurp = 0;
       
       if (m.mass <= mass/50) slurp = m.mass;
       else slurp = mass/50;
-      if (mass + slurp > DIVSIZE*1.1) slurp = DIVSIZE*1.1 - mass + 1;
+      if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
       
       m.mass -= slurp;
       mass += slurp*0.5;
@@ -185,5 +190,29 @@ class Mover {
     mass *= 0.5;
     radius = sqrt(mass/PI);
   }
-
+  
+  //Find the
+  PVector torusPointer(PVector p1, PVector p2) {
+    float x, y;
+    
+    //Determine x
+    if (p1.x - p2.x <= (sWidth+BORDERSIZE*2) - abs(p1.x - p2.x)) {
+      x = p1.x - p2.x;
+    }
+    else {
+      x = (sWidth+BORDERSIZE*2) - abs(p1.x - p2.x);
+      if (p1.x - p2.x > 0) x *= -1;
+    }
+    
+    //Determine y
+    if (p1.y - p2.y <= (sHeight+BORDERSIZE*2) - abs(p1.y - p2.y)) {
+      y = p1.y - p2.y;
+    }
+    else {
+      x = (sHeight+BORDERSIZE*2) - abs(p1.y - p2.y);
+      if (p1.y - p2.y > 0) y *= -1;
+    }
+    
+    return new PVector(x, y);
+  }
 }

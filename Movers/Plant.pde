@@ -19,7 +19,7 @@ class Plant {
       float g = map(mass, DIVSIZE*2, 10000, 0, growthRate-1);
       mass *= growthRate - g;
     }
-    
+  
     radius = sqrt(mass/PI);
     return false;
   }
