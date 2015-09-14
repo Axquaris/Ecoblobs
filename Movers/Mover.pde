@@ -85,10 +85,6 @@ class Mover {
     location.add(velocity);
     
     //Torification :)
-    //if (location.x + BORDERSIZE <= 0) location.x += sWidth + BORDERSIZE*2;
-    //else if (location.x - BORDERSIZE >= sWidth) location.x -= sWidth + BORDERSIZE*2;
-    //if (location.y + BORDERSIZE <= 0) location.y += sHeight + BORDERSIZE*2;
-    //else if (location.y - BORDERSIZE >= sHeight) location.y -= sHeight + BORDERSIZE*2;
     torify();
     
     //Division test
@@ -110,6 +106,7 @@ class Mover {
     fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
+    line(location.x, location.y, location.x+target.x, location.y+target.y);
   }
   
   void consider(Mover m) {
@@ -140,7 +137,7 @@ class Mover {
     }
     
     //Set importance of target
-    pointer.setMag(strength);
+    pointer.mult(strength);
     //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
@@ -169,7 +166,7 @@ class Mover {
     float strength = m.mass/pow(distance, 2)/4;
     
     //Set importance of target
-    pointer.setMag(strength);
+    pointer.mult(strength);
     //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }

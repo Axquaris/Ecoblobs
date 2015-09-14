@@ -184,10 +184,6 @@ class Mover {
     location.add(velocity);
     
     //Torification :)
-    //if (location.x + BORDERSIZE <= 0) location.x += sWidth + BORDERSIZE*2;
-    //else if (location.x - BORDERSIZE >= sWidth) location.x -= sWidth + BORDERSIZE*2;
-    //if (location.y + BORDERSIZE <= 0) location.y += sHeight + BORDERSIZE*2;
-    //else if (location.y - BORDERSIZE >= sHeight) location.y -= sHeight + BORDERSIZE*2;
     torify();
     
     //Division test
@@ -209,6 +205,7 @@ class Mover {
     fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
+    line(location.x, location.y, location.x+target.x, location.y+target.y);
   }
   
   void consider(Mover m) {
@@ -239,7 +236,7 @@ class Mover {
     }
     
     //Set importance of target
-    pointer.setMag(strength);
+    pointer.mult(strength);
     //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
@@ -268,7 +265,7 @@ class Mover {
     float strength = m.mass/pow(distance, 2)/4;
     
     //Set importance of target
-    pointer.setMag(strength);
+    pointer.mult(strength);
     //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
@@ -398,6 +395,7 @@ class Mover {
 class Plant {
 
   PVector location;
+  PVector velocity;
   float radius;
   float mass;
   
@@ -445,7 +443,7 @@ public class UiButton {
     movers = new ArrayList<Mover>();
     for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
     plants = new ArrayList<Plant>();
-    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
+    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(sWidth),random(sHeight)));
     metabolismRate = moversMCtrl.value;
     growthRate = plantsMCtrl.value;
     graph.reset();

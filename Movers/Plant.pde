@@ -1,6 +1,7 @@
 class Plant {
 
   PVector location;
+  PVector velocity;
   float radius;
   float mass;
   
