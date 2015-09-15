@@ -1,18 +1,17 @@
 import de.bezier.guido.*;
 
+//Simulation Vars
 public int sHeight;
 public int sWidth;
 final static int DIVSIZE = 1000;
 final static float NOMFACTOR = 1.2; //if (myMass > itsMass * NOMFACTOR) then its NOMABBLE
-float metabolismRate, growthRate;
-
-  
 final float BORDERSIZE = sqrt(DIVSIZE/PI);
+final float PBORDERSIZE = sqrt(10000/PI);
+float metabolismRate, growthRate;
   
+public GridField grid;
 public ArrayList<Mover> movers = new ArrayList<Mover>();
 public ArrayList<Plant> plants = new ArrayList<Plant>();
-
-float g = 0.4;
 
 //UI ELEMENTS
 UiButton reset;
@@ -21,6 +20,9 @@ UiSlider plantsCtrl;
 UiSlider moversMCtrl;
 UiSlider plantsMCtrl;
 UiGrapherII graph;
+
+//Debug Mode
+public boolean debug;
 
 void setup() {
   frameRate(30);
@@ -33,6 +35,7 @@ void setup() {
   growthRate = 1.01;
   
   //Create Blobs
+  grid = new GridField(50);
   movers = new ArrayList<Mover>();
   for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
   plants = new ArrayList<Plant>();
@@ -41,6 +44,9 @@ void setup() {
   //UI
   Interactive.make( this );
   setupUi();
+  
+  //Debug
+  debug = false;
   
   //noLoop(); //Starts sketch paused for blog
 }
@@ -67,7 +73,10 @@ void draw() {
   }
   graph.plotB(pMass);
   
+  if (debug) grid.displayFlow();
+  
   //Display blobs
+  for (int i = 0; i < plants.size(); i++) plants.get(i).displayGhosts();
   for (int i = 0; i < plants.size(); i++) plants.get(i).display();
   for (int i = 0; i < movers.size(); i++) movers.get(i).displayGhosts();
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
@@ -77,6 +86,12 @@ void draw() {
   rect(0, sHeight, 650, 100);
 
   graph.render();
+}
+
+void keyPressed() {
+  if (key == 'd') {
+    debug = !debug;
+  }
 }
 
 void setupUi() {

@@ -56,7 +56,7 @@ class Mover {
     tDivisor = 0;
     acceleration.mult(0);
 
-    if (mass < 20) return true; //Self destruct
+    if (mass < 5) return true; //Self destruct
     
     closestThreat = 1000;
     

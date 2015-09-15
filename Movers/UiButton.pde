@@ -18,6 +18,7 @@ public class UiButton {
     metabolismRate = moversMCtrl.value;
     growthRate = plantsMCtrl.value;
     graph.reset();
+    grid.newFlowField();
     
     pressed = true;
   }
