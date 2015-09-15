@@ -14,10 +14,11 @@ public class UiButton {
     movers = new ArrayList<Mover>();
     for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
     plants = new ArrayList<Plant>();
-    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
+    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(sWidth),random(sHeight)));
     metabolismRate = moversMCtrl.value;
     growthRate = plantsMCtrl.value;
     graph.reset();
+    grid.newFlowField();
     
     pressed = true;
   }

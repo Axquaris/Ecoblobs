@@ -1,18 +1,17 @@
 import de.bezier.guido.*;
 
+//Simulation Vars
 public int sHeight;
 public int sWidth;
 final static int DIVSIZE = 1000;
 final static float NOMFACTOR = 1.2; //if (myMass > itsMass * NOMFACTOR) then its NOMABBLE
-float metabolismRate, growthRate;
-
-  
 final float BORDERSIZE = sqrt(DIVSIZE/PI);
+final float PBORDERSIZE = sqrt(10000/PI);
+float metabolismRate, growthRate;
   
+public GridField grid;
 public ArrayList<Mover> movers = new ArrayList<Mover>();
 public ArrayList<Plant> plants = new ArrayList<Plant>();
-
-float g = 0.4;
 
 //UI ELEMENTS
 UiButton reset;
@@ -21,6 +20,9 @@ UiSlider plantsCtrl;
 UiSlider moversMCtrl;
 UiSlider plantsMCtrl;
 UiGrapherII graph;
+
+//Debug Mode
+public boolean debug;
 
 void setup() {
   frameRate(30);
@@ -33,6 +35,7 @@ void setup() {
   growthRate = 1.01;
   
   //Create Blobs
+  grid = new GridField(50);
   movers = new ArrayList<Mover>();
   for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
   plants = new ArrayList<Plant>();
@@ -41,6 +44,9 @@ void setup() {
   //UI
   Interactive.make( this );
   setupUi();
+  
+  //Debug
+  debug = false;
   
   //noLoop(); //Starts sketch paused for blog
 }
@@ -67,7 +73,10 @@ void draw() {
   }
   graph.plotB(pMass);
   
+  if (debug) grid.displayFlow();
+  
   //Display blobs
+  for (int i = 0; i < plants.size(); i++) plants.get(i).displayGhosts();
   for (int i = 0; i < plants.size(); i++) plants.get(i).display();
   for (int i = 0; i < movers.size(); i++) movers.get(i).displayGhosts();
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
@@ -77,6 +86,12 @@ void draw() {
   rect(0, sHeight, 650, 100);
 
   graph.render();
+}
+
+void keyPressed() {
+  if (key == 'd') {
+    debug = !debug;
+  }
 }
 
 void setupUi() {
@@ -96,6 +111,67 @@ void setupUi() {
   
   graph = new UiGrapherII(650, height-150, 350, 150, "Blob Masses");
 }
+
+//Code inspired by:
+// Daniel Shiffman's The Nature of Code @ http://natureofcode.com
+
+class GridField {
+
+  PVector[][] field;
+  int rows, cols;
+  int resolution;
+
+  GridField(int r) {
+    resolution = r;
+    cols = sWidth/resolution;
+    rows = sHeight/resolution;
+    field = new PVector[cols][rows];
+    newFlowField();
+  }
+
+  void newFlowField() {
+    noiseSeed((int)random(10000));
+    float xoff = 0;
+    for (int i = 0; i < cols; i++) {
+      float yoff = 0;
+      for (int j = 0; j < rows; j++) {
+        float theta = map(noise(xoff,yoff,0.005),0,1,0,TWO_PI);
+        field[i][j] = new PVector(cos(theta),sin(theta));
+        yoff += 0.1;
+      }
+      xoff += 0.1;
+    }
+  }
+
+  void displayFlow() {
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {
+        drawVector(field[i][j],(i+.5)*resolution,(j+.5)*resolution);
+      }
+    }
+
+  }
+
+  void drawVector(PVector v, float x, float y) {
+    stroke(0);
+    strokeWeight(1);
+    v.setMag(resolution/2-1);
+    line(x,y,x+v.x,y+v.y);
+    line(x,y,x-v.x,y-v.y);
+  }
+
+  PVector getFlow(PVector location) {
+    int column = int(constrain(location.x/resolution,0,cols-1));
+    int row = int(constrain(location.y/resolution,0,rows-1));
+    return field[column][row].get();
+  }
+
+
+}
+
+
+
+
 
 class Mover {
   //Property Vars
@@ -155,7 +231,7 @@ class Mover {
     tDivisor = 0;
     acceleration.mult(0);
 
-    if (mass < 20) return true; //Self destruct
+    if (mass < 5) return true; //Self destruct
     
     closestThreat = 1000;
     
@@ -184,10 +260,6 @@ class Mover {
     location.add(velocity);
     
     //Torification :)
-    //if (location.x + BORDERSIZE <= 0) location.x += sWidth + BORDERSIZE*2;
-    //else if (location.x - BORDERSIZE >= sWidth) location.x -= sWidth + BORDERSIZE*2;
-    //if (location.y + BORDERSIZE <= 0) location.y += sHeight + BORDERSIZE*2;
-    //else if (location.y - BORDERSIZE >= sHeight) location.y -= sHeight + BORDERSIZE*2;
     torify();
     
     //Division test
@@ -209,6 +281,7 @@ class Mover {
     fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
+    line(location.x, location.y, location.x+target.x, location.y+target.y);
   }
   
   void consider(Mover m) {
@@ -239,7 +312,7 @@ class Mover {
     }
     
     //Set importance of target
-    pointer.setMag(strength);
+    pointer.mult(strength);
     //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
@@ -268,7 +341,7 @@ class Mover {
     float strength = m.mass/pow(distance, 2)/4;
     
     //Set importance of target
-    pointer.setMag(strength);
+    pointer.mult(strength);
     //Add new desired location
     if (strength != 0) addTarget(pointer, strength);
   }
@@ -396,19 +469,35 @@ class Mover {
   }
 }
 class Plant {
-
+  
+  //Property Vars
   PVector location;
+  PVector velocity;
+  PVector acceleration;
   float radius;
   float mass;
   
+  //Torrific Vars
+  int ghostX;
+  int ghostY;
+  
   Plant(float m, float x, float y) {
+    //Property Vars
     mass = m;
     radius = sqrt(m/PI);
     location = new PVector(x, y);
+    velocity = new PVector();
+    acceleration = new PVector();
+    
+    //Torrific Vars
+    ghostX = 0;
+    ghostY = 0;
   }
   
   boolean update() {
-    if (mass < 20) return true; //Self-destruct
+    if (mass < 5) return true; //Self-destruct
+    
+    acceleration.mult(0);
     
     //Growth limitation
     if (mass < DIVSIZE*2) mass *= growthRate;
@@ -416,7 +505,17 @@ class Plant {
       float g = map(mass, DIVSIZE*2, 10000, 0, growthRate-1);
       mass *= growthRate - g;
     }
-  
+    
+    acceleration = grid.getFlow(location);
+    acceleration.setMag(100);
+    acceleration.div(mass);
+    
+    velocity.add(acceleration);
+    velocity.limit(1);
+    location.add(velocity);
+    
+    torify();
+    
     radius = sqrt(mass/PI);
     return false;
   }
@@ -427,6 +526,62 @@ class Plant {
     strokeWeight(2);
     fill(93, 156, 51, 240);
     ellipse(location.x, location.y, radius, radius);
+  }
+  
+  //Display toriod ghost if applicable
+  void displayGhosts() {
+    radius = sqrt(mass/PI);
+    stroke(43, 71, 20);
+    strokeWeight(2);
+    fill(93, 156, 51, 240);
+    
+    if (ghostX != 0 && ghostY != 0) {
+      displayGhost(ghostX*sWidth, 0);
+      displayGhost(0, ghostY * sHeight);
+      displayGhost(ghostX*sWidth, ghostY * sHeight);
+    }
+    else if (ghostX != 0) displayGhost(ghostX*sWidth, 0);
+    else if (ghostY != 0) displayGhost(0, ghostY * sHeight);
+  }
+  
+  //Subfunction for displayGhost
+  void displayGhost(int xShift, int yShift) {
+    ellipse(location.x+xShift, location.y+yShift, radius, radius);
+  }
+  
+  //Makes sketch even more torrific than before :D
+  void torify() {
+    if (location.x <= PBORDERSIZE) {
+      ghostX = 1;
+      if (location.x <= 0) {
+        location.x += sWidth;
+        ghostX = -1;
+      }
+    }
+    else if (location.x >= sWidth - PBORDERSIZE) {
+      ghostX = -1;
+      if (location.x >= sWidth) {
+        location.x -= sWidth;
+        ghostX = 1;
+      }
+    }
+    else ghostX = 0;
+    
+    if (location.y <= PBORDERSIZE) {
+      ghostY = 1;
+      if (location.y <= 0) {
+        location.y += sHeight;
+        ghostY = -1;
+      }
+    }
+    else if (location.y >= sHeight - PBORDERSIZE) {
+      ghostY = -1;
+      if (location.y >= sHeight) {
+        location.y -= sHeight;
+        ghostY = 1;
+      }
+    }
+    else ghostY = 0;
   }
 }
 public class UiButton {
@@ -445,10 +600,11 @@ public class UiButton {
     movers = new ArrayList<Mover>();
     for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
     plants = new ArrayList<Plant>();
-    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
+    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(sWidth),random(sHeight)));
     metabolismRate = moversMCtrl.value;
     growthRate = plantsMCtrl.value;
     graph.reset();
+    grid.newFlowField();
     
     pressed = true;
   }
