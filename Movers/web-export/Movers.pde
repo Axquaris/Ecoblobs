@@ -508,14 +508,17 @@ class Mover {
     }
     else ghostY = 0;
   }
+  
+  void focus() {
+    strokeWeight = 6;
+  }
+  
+  void unFocus() {
+    strokeWeight = 2;
+  }
 }
 
-void focus() {
-  strokeWeight = 4;
-}
-void unFocus() {
-  strokeWeight =2;
-}
+
 class Plant {
   
   //Property Vars
@@ -636,14 +639,16 @@ class Plant {
     }
     else ghostY = 0;
   }
+  void focus() {
+    strokeWeight = 8;
+  }
+  
+  void unFocus() {
+    strokeWeight = 2;
+  }
 }
 
-void focus() {
-  strokeWeight = 4;
-}
-void unFocus() {
-  strokeWeight =2;
-}
+
 public class UiButton {
   float x, y, width, height;
   String s;
@@ -814,47 +819,45 @@ public class UiProperties{
     stroke(0);
     strokeWeight(1);
     textAlign( LEFT, CENTER );
-    try {
     //Mover
-      if (obj instanceof Mover) {
-        Mover blob = (Mover)obj;
-        
-        textSize( titleS );
-        text("Mover #"+num, x+edge, y+titleEdge*3/4);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
+    if (obj instanceof Mover) {
+      Mover blob = (Mover)obj;
       
-      //Plant
-      else if (obj instanceof Plant) {
-        Plant blob = (Plant)obj;
-        
-        textSize( titleS );
-        text("Plant #"+num, x+edge, y+titleEdge/2);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
-    } catch(Exception e){}
+      textSize( titleS );
+      text("Mover #"+num, x+edge, y+titleEdge*3/4);
+      
+      textSize( infoS );
+      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+        x+edge, y+titleEdge+titleS);
+      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*2);
+      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*3);
+      text("Mass: "+(int)blob.mass,
+        x+edge, y+titleEdge+titleS*4);
+      text("Radius: "+(int)blob.radius,
+        x+edge, y+titleEdge+titleS*5);
+    }
+    
+    //Plant
+    else if (obj instanceof Plant) {
+      Plant blob = (Plant)obj;
+      
+      textSize( titleS );
+      text("Plant #"+num, x+edge, y+titleEdge/2);
+      
+      textSize( infoS );
+      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+        x+edge, y+titleEdge+titleS);
+      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*2);
+      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*3);
+      text("Mass: "+(int)blob.mass,
+        x+edge, y+titleEdge+titleS*4);
+      text("Radius: "+(int)blob.radius,
+        x+edge, y+titleEdge+titleS*5);
+    }
   }
 }
 public class UiSlider
@@ -865,8 +868,7 @@ public class UiSlider
   color button;
   float buttonW;
   
-  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) 
-  {
+  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) {
     x = xx; 
     y = yy; 
     width = ww; 
@@ -912,8 +914,7 @@ public class UiSlider
       value = getGR();
   }
 
-  public void draw () 
-  {
+  public void draw () {
     float f = 0.75; //How much smaller rail bar is
     stroke(0);
     fill( bar );

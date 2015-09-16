@@ -22,46 +22,44 @@ public class UiProperties{
     stroke(0);
     strokeWeight(1);
     textAlign( LEFT, CENTER );
-    try {
     //Mover
-      if (obj instanceof Mover) {
-        Mover blob = (Mover)obj;
-        
-        textSize( titleS );
-        text("Mover #"+num, x+edge, y+titleEdge*3/4);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
+    if (obj instanceof Mover) {
+      Mover blob = (Mover)obj;
       
-      //Plant
-      else if (obj instanceof Plant) {
-        Plant blob = (Plant)obj;
-        
-        textSize( titleS );
-        text("Plant #"+num, x+edge, y+titleEdge/2);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
-    } catch(Exception e){}
+      textSize( titleS );
+      text("Mover #"+num, x+edge, y+titleEdge*3/4);
+      
+      textSize( infoS );
+      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+        x+edge, y+titleEdge+titleS);
+      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*2);
+      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*3);
+      text("Mass: "+(int)blob.mass,
+        x+edge, y+titleEdge+titleS*4);
+      text("Radius: "+(int)blob.radius,
+        x+edge, y+titleEdge+titleS*5);
+    }
+    
+    //Plant
+    else if (obj instanceof Plant) {
+      Plant blob = (Plant)obj;
+      
+      textSize( titleS );
+      text("Plant #"+num, x+edge, y+titleEdge/2);
+      
+      textSize( infoS );
+      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+        x+edge, y+titleEdge+titleS);
+      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*2);
+      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*3);
+      text("Mass: "+(int)blob.mass,
+        x+edge, y+titleEdge+titleS*4);
+      text("Radius: "+(int)blob.radius,
+        x+edge, y+titleEdge+titleS*5);
+    }
   }
 }

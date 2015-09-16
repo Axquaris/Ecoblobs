@@ -6,8 +6,7 @@ public class UiSlider
   color button;
   float buttonW;
   
-  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) 
-  {
+  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) {
     x = xx; 
     y = yy; 
     width = ww; 
@@ -53,8 +52,7 @@ public class UiSlider
       value = getGR();
   }
 
-  public void draw () 
-  {
+  public void draw () {
     float f = 0.75; //How much smaller rail bar is
     stroke(0);
     fill( bar );
