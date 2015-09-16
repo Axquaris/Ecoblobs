@@ -85,6 +85,7 @@ void draw() {
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
 
   //GUI
+  strokeWeight(1);
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
   
@@ -99,25 +100,25 @@ void keyPressed() {
 }
 
 void mousePressed() {
-  for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
   for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
+  for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
   
-  for (int i = 0; i < plants.size(); i++) {
-    float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
-                        +pow(plants.get(i).location.y-mouseY, 2));
-    if ( distance <= plants.get(i).radius ) {
-      plants.get(i).focus();
-      focus = plants.get(i);
-      focusN = i;
-      return;
-    }
-  }
   for (int i = 0; i < movers.size(); i++) {
     float distance = sqrt(pow(movers.get(i).location.x-mouseX, 2)
                         +pow(movers.get(i).location.y-mouseY, 2));
     if ( distance <= movers.get(i).radius ) {
       movers.get(i).focus();
       focus = movers.get(i);
+      focusN = i;
+      return;
+    }
+  }
+  for (int i = 0; i < plants.size(); i++) {
+    float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
+                        +pow(plants.get(i).location.y-mouseY, 2));
+    if ( distance <= plants.get(i).radius ) {
+      plants.get(i).focus();
+      focus = plants.get(i);
       focusN = i;
       return;
     }

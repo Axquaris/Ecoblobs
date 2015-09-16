@@ -58,7 +58,7 @@ class Plant {
   void display() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    sWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(93, 156, 51, 240);
     ellipse(location.x, location.y, radius, radius);
   }
@@ -67,7 +67,7 @@ class Plant {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    sWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(93, 156, 51, 240);
     
     if (ghostX != 0 && ghostY != 0) {

@@ -32,6 +32,7 @@ public class UiButton {
     rect( x, y, width, height, (width+height)/2/10 );
     fill( 0 );
     textSize( 30 );
+    strokeWeight(1);
     textAlign( CENTER, CENTER );
     if ( pressed ) text( s, x+width/2, y+height/2);
     else text( s, x+width/2, y+height/2);

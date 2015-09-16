@@ -51,7 +51,7 @@ void setup() {
   //Debug
   debug = false;
   
-  //noLoop(); //Starts sketch paused for blog
+  noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
@@ -85,6 +85,7 @@ void draw() {
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
 
   //GUI
+  strokeWeight(1);
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
   
@@ -99,25 +100,25 @@ void keyPressed() {
 }
 
 void mousePressed() {
-  for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
   for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
+  for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
   
-  for (int i = 0; i < plants.size(); i++) {
-    float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
-                        +pow(plants.get(i).location.y-mouseY, 2));
-    if ( distance <= plants.get(i).radius ) {
-      plants.get(i).focus();
-      focus = plants.get(i);
-      focusN = i;
-      return;
-    }
-  }
   for (int i = 0; i < movers.size(); i++) {
     float distance = sqrt(pow(movers.get(i).location.x-mouseX, 2)
                         +pow(movers.get(i).location.y-mouseY, 2));
     if ( distance <= movers.get(i).radius ) {
       movers.get(i).focus();
       focus = movers.get(i);
+      focusN = i;
+      return;
+    }
+  }
+  for (int i = 0; i < plants.size(); i++) {
+    float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
+                        +pow(plants.get(i).location.y-mouseY, 2));
+    if ( distance <= plants.get(i).radius ) {
+      plants.get(i).focus();
+      focus = plants.get(i);
       focusN = i;
       return;
     }
@@ -232,7 +233,7 @@ class Mover {
     // -1 = ghost on top
     
   //GUI Vars
-  int strokeWeight;
+  int sWeight;
   
   Mover(float m, float x, float y) {
     //Property Vars
@@ -253,7 +254,7 @@ class Mover {
     ghostY = 0;
     
     //GUI Vars
-    strokeWeight = 2;
+    sWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -318,7 +319,7 @@ class Mover {
   void display() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
@@ -456,7 +457,7 @@ class Mover {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -510,11 +511,11 @@ class Mover {
   }
   
   void focus() {
-    strokeWeight = 6;
+    sWeight = 6;
   }
   
   void unFocus() {
-    strokeWeight = 2;
+    sWeight = 2;
   }
 }
 
@@ -533,7 +534,7 @@ class Plant {
   int ghostY;
   
   //GUI Vars
-  int strokeWeight;
+  int sWeight;
   
   Plant(float m, float x, float y) {
     //Property Vars
@@ -547,7 +548,7 @@ class Plant {
     ghostX = 0;
     ghostY = 0;
     
-    strokeWeight = 2;
+    sWeight = 2;
   }
   
   boolean update() {
@@ -579,7 +580,7 @@ class Plant {
   void display() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(93, 156, 51, 240);
     ellipse(location.x, location.y, radius, radius);
   }
@@ -588,7 +589,7 @@ class Plant {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(93, 156, 51, 240);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -640,11 +641,11 @@ class Plant {
     else ghostY = 0;
   }
   void focus() {
-    strokeWeight = 8;
+    sWeight = 8;
   }
   
   void unFocus() {
-    strokeWeight = 2;
+    sWeight = 2;
   }
 }
 
@@ -683,6 +684,7 @@ public class UiButton {
     rect( x, y, width, height, (width+height)/2/10 );
     fill( 0 );
     textSize( 30 );
+    strokeWeight(1);
     textAlign( CENTER, CENTER );
     if ( pressed ) text( s, x+width/2, y+height/2);
     else text( s, x+width/2, y+height/2);
@@ -819,45 +821,47 @@ public class UiProperties{
     stroke(0);
     strokeWeight(1);
     textAlign( LEFT, CENTER );
+    try {
     //Mover
-    if (obj instanceof Mover) {
-      Mover blob = (Mover)obj;
+      if (obj instanceof Mover) {
+        Mover blob = (Mover)obj;
+        
+        textSize( titleS );
+        text("Mover #"+num, x+edge, y+titleEdge*3/4);
+        
+        textSize( infoS );
+        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+          x+edge, y+titleEdge+titleS);
+        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*2);
+        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*3);
+        text("Mass: "+(int)blob.mass,
+          x+edge, y+titleEdge+titleS*4);
+        text("Radius: "+(int)blob.radius,
+          x+edge, y+titleEdge+titleS*5);
+      }
       
-      textSize( titleS );
-      text("Mover #"+num, x+edge, y+titleEdge*3/4);
-      
-      textSize( infoS );
-      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-        x+edge, y+titleEdge+titleS);
-      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-        x+edge, y+titleEdge+titleS*2);
-      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-        x+edge, y+titleEdge+titleS*3);
-      text("Mass: "+(int)blob.mass,
-        x+edge, y+titleEdge+titleS*4);
-      text("Radius: "+(int)blob.radius,
-        x+edge, y+titleEdge+titleS*5);
-    }
-    
-    //Plant
-    else if (obj instanceof Plant) {
-      Plant blob = (Plant)obj;
-      
-      textSize( titleS );
-      text("Plant #"+num, x+edge, y+titleEdge/2);
-      
-      textSize( infoS );
-      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-        x+edge, y+titleEdge+titleS);
-      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-        x+edge, y+titleEdge+titleS*2);
-      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-        x+edge, y+titleEdge+titleS*3);
-      text("Mass: "+(int)blob.mass,
-        x+edge, y+titleEdge+titleS*4);
-      text("Radius: "+(int)blob.radius,
-        x+edge, y+titleEdge+titleS*5);
-    }
+      //Plant
+      else if (obj instanceof Plant) {
+        Plant blob = (Plant)obj;
+        
+        textSize( titleS );
+        text("Plant #"+num, x+edge, y+titleEdge/2);
+        
+        textSize( infoS );
+        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+          x+edge, y+titleEdge+titleS);
+        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*2);
+        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*3);
+        text("Mass: "+(int)blob.mass,
+          x+edge, y+titleEdge+titleS*4);
+        text("Radius: "+(int)blob.radius,
+          x+edge, y+titleEdge+titleS*5);
+      }
+    } catch(Exception e){}
   }
 }
 public class UiSlider
@@ -868,7 +872,8 @@ public class UiSlider
   color button;
   float buttonW;
   
-  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) {
+  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) 
+  {
     x = xx; 
     y = yy; 
     width = ww; 
@@ -914,10 +919,12 @@ public class UiSlider
       value = getGR();
   }
 
-  public void draw () {
+  public void draw () 
+  {
     float f = 0.75; //How much smaller rail bar is
     stroke(0);
     fill( bar );
+    strokeWeight(1);
     rect(x, y + (1-f)*height/2, width, height*f );
     
     stroke(0);
