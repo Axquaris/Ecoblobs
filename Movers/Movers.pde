@@ -19,7 +19,10 @@ UiSlider moversCtrl;
 UiSlider plantsCtrl;
 UiSlider moversMCtrl;
 UiSlider plantsMCtrl;
+Object focus;
+int focusN;
 UiGrapherII graph;
+UiProperties display;
 
 //Debug Mode
 public boolean debug;
@@ -84,14 +87,43 @@ void draw() {
   //GUI
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
-
-  graph.render();
+  
+  if (focusN == -1)  graph.render();
+  else display.render(focus, focusN);
 }
 
 void keyPressed() {
   if (key == 'd') {
     debug = !debug;
   }
+}
+
+void mousePressed() {
+  for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
+  for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
+  
+  for (int i = 0; i < plants.size(); i++) {
+    float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
+                        +pow(plants.get(i).location.y-mouseY, 2));
+    if ( distance <= plants.get(i).radius ) {
+      plants.get(i).focus();
+      focus = plants.get(i);
+      focusN = i;
+      return;
+    }
+  }
+  for (int i = 0; i < movers.size(); i++) {
+    float distance = sqrt(pow(movers.get(i).location.x-mouseX, 2)
+                        +pow(movers.get(i).location.y-mouseY, 2));
+    if ( distance <= movers.get(i).radius ) {
+      movers.get(i).focus();
+      focus = movers.get(i);
+      focusN = i;
+      return;
+    }
+  }
+  
+  focusN = -1;
 }
 
 void setupUi() {
@@ -109,6 +141,9 @@ void setupUi() {
   plantsMCtrl.button = color(93, 156, 51, 250);
   plantsMCtrl.buttonW = plantsMCtrl.height*2;
   
+  focus = null;
+  focusN = -1;
   graph = new UiGrapherII(650, height-150, 350, 150, "Blob Masses");
+  display = new UiProperties(650, height-150, 350, 150);
 }
 

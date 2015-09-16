@@ -20,6 +20,9 @@ class Mover {
     // 0 = no change
     // 1 = ghost on bottom
     // -1 = ghost on top
+    
+  //GUI Vars
+  int strokeWeight;
   
   Mover(float m, float x, float y) {
     //Property Vars
@@ -38,6 +41,9 @@ class Mover {
     //Torrific Vars
     ghostX = 0;
     ghostY = 0;
+    
+    //GUI Vars
+    strokeWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -102,7 +108,7 @@ class Mover {
   void display() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
@@ -240,7 +246,7 @@ class Mover {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -292,4 +298,14 @@ class Mover {
     }
     else ghostY = 0;
   }
+  
+  void focus() {
+    strokeWeight = 6;
+  }
+  
+  void unFocus() {
+    strokeWeight = 2;
+  }
 }
+
+

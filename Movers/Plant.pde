@@ -11,6 +11,9 @@ class Plant {
   int ghostX;
   int ghostY;
   
+  //GUI Vars
+  int strokeWeight;
+  
   Plant(float m, float x, float y) {
     //Property Vars
     mass = m;
@@ -22,6 +25,8 @@ class Plant {
     //Torrific Vars
     ghostX = 0;
     ghostY = 0;
+    
+    strokeWeight = 2;
   }
   
   boolean update() {
@@ -53,7 +58,7 @@ class Plant {
   void display() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(93, 156, 51, 240);
     ellipse(location.x, location.y, radius, radius);
   }
@@ -62,7 +67,7 @@ class Plant {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(93, 156, 51, 240);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -113,4 +118,13 @@ class Plant {
     }
     else ghostY = 0;
   }
+  void focus() {
+    strokeWeight = 8;
+  }
+  
+  void unFocus() {
+    strokeWeight = 2;
+  }
 }
+
+
