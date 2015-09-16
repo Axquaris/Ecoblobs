@@ -51,7 +51,7 @@ void setup() {
   //Debug
   debug = false;
   
-  //noLoop(); //Starts sketch paused for blog
+  noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
@@ -232,7 +232,7 @@ class Mover {
     // -1 = ghost on top
     
   //GUI Vars
-  int strokeWeight;
+  int sWeight;
   
   Mover(float m, float x, float y) {
     //Property Vars
@@ -253,7 +253,7 @@ class Mover {
     ghostY = 0;
     
     //GUI Vars
-    strokeWeight = 2;
+    sWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -318,7 +318,7 @@ class Mover {
   void display() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
@@ -456,7 +456,7 @@ class Mover {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -508,14 +508,17 @@ class Mover {
     }
     else ghostY = 0;
   }
+  
+  void focus() {
+    sWeight = 6;
+  }
+  
+  void unFocus() {
+    sWeight = 2;
+  }
 }
 
-void focus() {
-  strokeWeight = 4;
-}
-void unFocus() {
-  strokeWeight =2;
-}
+
 class Plant {
   
   //Property Vars
@@ -530,7 +533,7 @@ class Plant {
   int ghostY;
   
   //GUI Vars
-  int strokeWeight;
+  int sWeight;
   
   Plant(float m, float x, float y) {
     //Property Vars
@@ -544,7 +547,7 @@ class Plant {
     ghostX = 0;
     ghostY = 0;
     
-    strokeWeight = 2;
+    sWeight = 2;
   }
   
   boolean update() {
@@ -576,7 +579,7 @@ class Plant {
   void display() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(93, 156, 51, 240);
     ellipse(location.x, location.y, radius, radius);
   }
@@ -585,7 +588,7 @@ class Plant {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(strokeWeight);
+    strokeWeight(sWeight);
     fill(93, 156, 51, 240);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -636,14 +639,16 @@ class Plant {
     }
     else ghostY = 0;
   }
+  void focus() {
+    sWeight = 8;
+  }
+  
+  void unFocus() {
+    sWeight = 2;
+  }
 }
 
-void focus() {
-  strokeWeight = 4;
-}
-void unFocus() {
-  strokeWeight =2;
-}
+
 public class UiButton {
   float x, y, width, height;
   String s;
