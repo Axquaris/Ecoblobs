@@ -19,7 +19,10 @@ UiSlider moversCtrl;
 UiSlider plantsCtrl;
 UiSlider moversMCtrl;
 UiSlider plantsMCtrl;
+Object focus;
+int focusN;
 UiGrapherII graph;
+UiProperties display;
 
 //Debug Mode
 public boolean debug;
@@ -84,14 +87,43 @@ void draw() {
   //GUI
   fill(57, 103, 144);
   rect(0, sHeight, 650, 100);
-
-  graph.render();
+  
+  if (focusN == -1)  graph.render();
+  else display.render(focus, focusN);
 }
 
 void keyPressed() {
   if (key == 'd') {
     debug = !debug;
   }
+}
+
+void mousePressed() {
+  for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
+  for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
+  
+  for (int i = 0; i < plants.size(); i++) {
+    float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
+                        +pow(plants.get(i).location.y-mouseY, 2));
+    if ( distance <= plants.get(i).radius ) {
+      plants.get(i).focus();
+      focus = plants.get(i);
+      focusN = i;
+      return;
+    }
+  }
+  for (int i = 0; i < movers.size(); i++) {
+    float distance = sqrt(pow(movers.get(i).location.x-mouseX, 2)
+                        +pow(movers.get(i).location.y-mouseY, 2));
+    if ( distance <= movers.get(i).radius ) {
+      movers.get(i).focus();
+      focus = movers.get(i);
+      focusN = i;
+      return;
+    }
+  }
+  
+  focusN = -1;
 }
 
 void setupUi() {
@@ -109,7 +141,10 @@ void setupUi() {
   plantsMCtrl.button = color(93, 156, 51, 250);
   plantsMCtrl.buttonW = plantsMCtrl.height*2;
   
+  focus = null;
+  focusN = -1;
   graph = new UiGrapherII(650, height-150, 350, 150, "Blob Masses");
+  display = new UiProperties(650, height-150, 350, 150);
 }
 
 //Code inspired by:
@@ -195,6 +230,9 @@ class Mover {
     // 0 = no change
     // 1 = ghost on bottom
     // -1 = ghost on top
+    
+  //GUI Vars
+  int strokeWeight;
   
   Mover(float m, float x, float y) {
     //Property Vars
@@ -213,6 +251,9 @@ class Mover {
     //Torrific Vars
     ghostX = 0;
     ghostY = 0;
+    
+    //GUI Vars
+    strokeWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -277,7 +318,7 @@ class Mover {
   void display() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
@@ -415,7 +456,7 @@ class Mover {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(0);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -468,6 +509,13 @@ class Mover {
     else ghostY = 0;
   }
 }
+
+void focus() {
+  strokeWeight = 4;
+}
+void unFocus() {
+  strokeWeight =2;
+}
 class Plant {
   
   //Property Vars
@@ -481,6 +529,9 @@ class Plant {
   int ghostX;
   int ghostY;
   
+  //GUI Vars
+  int strokeWeight;
+  
   Plant(float m, float x, float y) {
     //Property Vars
     mass = m;
@@ -492,6 +543,8 @@ class Plant {
     //Torrific Vars
     ghostX = 0;
     ghostY = 0;
+    
+    strokeWeight = 2;
   }
   
   boolean update() {
@@ -523,7 +576,7 @@ class Plant {
   void display() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(93, 156, 51, 240);
     ellipse(location.x, location.y, radius, radius);
   }
@@ -532,7 +585,7 @@ class Plant {
   void displayGhosts() {
     radius = sqrt(mass/PI);
     stroke(43, 71, 20);
-    strokeWeight(2);
+    strokeWeight(strokeWeight);
     fill(93, 156, 51, 240);
     
     if (ghostX != 0 && ghostY != 0) {
@@ -583,6 +636,13 @@ class Plant {
     }
     else ghostY = 0;
   }
+}
+
+void focus() {
+  strokeWeight = 4;
+}
+void unFocus() {
+  strokeWeight =2;
 }
 public class UiButton {
   float x, y, width, height;
@@ -728,6 +788,73 @@ public class UiGrapherII{
     pNB = 0;
     max = 0;
     min = 0; 
+  }
+}
+public class UiProperties{
+  int x, y, w, h;
+  
+  //Layout Vars
+  int edge = 25;
+  int titleEdge = 30;
+  int titleS = 20;
+  int infoS = 15;
+  
+  UiProperties(int x, int y, int w, int h) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+  }
+  
+  void render(Object obj, int num){
+    fill(173, 117, 77);
+    rect(x, y, w, h);
+    
+    fill(0);
+    stroke(0);
+    strokeWeight(1);
+    textAlign( LEFT, CENTER );
+    try {
+    //Mover
+      if (obj instanceof Mover) {
+        Mover blob = (Mover)obj;
+        
+        textSize( titleS );
+        text("Mover #"+num, x+edge, y+titleEdge*3/4);
+        
+        textSize( infoS );
+        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+          x+edge, y+titleEdge+titleS);
+        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*2);
+        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*3);
+        text("Mass: "+(int)blob.mass,
+          x+edge, y+titleEdge+titleS*4);
+        text("Radius: "+(int)blob.radius,
+          x+edge, y+titleEdge+titleS*5);
+      }
+      
+      //Plant
+      else if (obj instanceof Plant) {
+        Plant blob = (Plant)obj;
+        
+        textSize( titleS );
+        text("Plant #"+num, x+edge, y+titleEdge/2);
+        
+        textSize( infoS );
+        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+          x+edge, y+titleEdge+titleS);
+        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*2);
+        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+          x+edge, y+titleEdge+titleS*3);
+        text("Mass: "+(int)blob.mass,
+          x+edge, y+titleEdge+titleS*4);
+        text("Radius: "+(int)blob.radius,
+          x+edge, y+titleEdge+titleS*5);
+      }
+    } catch(Exception e){}
   }
 }
 public class UiSlider
