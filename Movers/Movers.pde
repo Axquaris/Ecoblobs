@@ -28,7 +28,7 @@ UiProperties display;
 public boolean debug;
 
 void setup() {
-  frameRate(30);
+  frameRate(32);
   size(1000,800);
   sHeight = 700;
   sWidth = width;
@@ -91,6 +91,13 @@ void draw() {
   
   if (focusN == -1)  graph.render();
   else display.render(focus, focusN);
+  
+  if (debug) {
+    fill(200, 0, 0);
+    textAlign( LEFT, TOP );
+    textSize( 40 );
+    text("FPS: "+(int)frameRate, 10, 10);
+  }
 }
 
 void keyPressed() {

@@ -73,10 +73,8 @@ class Mover {
       }
     }
     for (int j = 0; j < plants.size(); j++) {
-      if (!this.equals(plants.get(j))) {
-        if (mass <= DIVSIZE) considerP(plants.get(j));
-        slurpP(plants.get(j));
-      }
+      if (mass <= DIVSIZE) considerP(plants.get(j));
+      slurpP(plants.get(j));
     }
     
     //Movement Calculations
@@ -92,6 +90,9 @@ class Mover {
     
     //Torification :)
     torify();
+    
+    //Quick Fix
+    if (location.x == 0 && location.y == 0) location.add(velocity);
     
     //Division test
     if (mass > DIVSIZE && closestThreat > 100) {

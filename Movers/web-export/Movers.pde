@@ -28,7 +28,7 @@ UiProperties display;
 public boolean debug;
 
 void setup() {
-  frameRate(30);
+  frameRate(32);
   size(1000,800);
   sHeight = 700;
   sWidth = width;
@@ -51,7 +51,7 @@ void setup() {
   //Debug
   debug = false;
   
-  noLoop(); //Starts sketch paused for blog
+  //noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
@@ -91,6 +91,13 @@ void draw() {
   
   if (focusN == -1)  graph.render();
   else display.render(focus, focusN);
+  
+  if (debug) {
+    fill(200, 0, 0);
+    textAlign( LEFT, TOP );
+    textSize( 40 );
+    text("FPS: "+(int)frameRate, 10, 10);
+  }
 }
 
 void keyPressed() {
@@ -284,10 +291,8 @@ class Mover {
       }
     }
     for (int j = 0; j < plants.size(); j++) {
-      if (!this.equals(plants.get(j))) {
-        if (mass <= DIVSIZE) considerP(plants.get(j));
-        slurpP(plants.get(j));
-      }
+      if (mass <= DIVSIZE) considerP(plants.get(j));
+      slurpP(plants.get(j));
     }
     
     //Movement Calculations
@@ -303,6 +308,9 @@ class Mover {
     
     //Torification :)
     torify();
+    
+    //Quick Fix
+    if (location.x == 0 && location.y == 0) location.add(velocity);
     
     //Division test
     if (mass > DIVSIZE && closestThreat > 100) {
