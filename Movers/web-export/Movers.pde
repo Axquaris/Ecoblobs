@@ -28,7 +28,7 @@ UiProperties display;
 public boolean debug;
 
 void setup() {
-  frameRate(30);
+  frameRate(30); //~45FPS ==> 
   size(1000,800);
   sHeight = 700;
   sWidth = width;
@@ -51,7 +51,7 @@ void setup() {
   //Debug
   debug = false;
   
-  noLoop(); //Starts sketch paused for blog
+  //noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
@@ -91,6 +91,13 @@ void draw() {
   
   if (focusN == -1)  graph.render();
   else display.render(focus, focusN);
+  
+  if (debug) {
+    fill(200, 0, 0);
+    textAlign( LEFT, TOP );
+    textSize( 40 );
+    text("FPS: "+(int)frameRate, 10, 10);
+  }
 }
 
 void keyPressed() {
@@ -148,22 +155,72 @@ void setupUi() {
   display = new UiProperties(650, height-150, 350, 150);
 }
 
+class Blob {
+  
+  //Property Vars
+  PVector location;
+  PVector velocity;
+  PVector acceleration;
+  float radius;
+  float mass;
+  
+  //Torrific Vars
+  int ghostX;
+  int ghostY;
+  
+  //GUI Vars
+  int sWeight;
+  
+  Blob(float m, float x, float y) {
+    //Property Vars
+    mass = m;
+    radius = sqrt(m/PI);
+    location = new PVector(x, y);
+    velocity = new PVector();
+    acceleration = new PVector();
+    
+    //Torrific Vars
+    ghostX = 0;
+    ghostY = 0;
+    
+    //GUI Var
+    sWeight = 2;
+  }
+}
 //Code inspired by:
 // Daniel Shiffman's The Nature of Code @ http://natureofcode.com
 
 class GridField {
-
-  PVector[][] field;
+  
+  //FlowField
   int rows, cols;
   int resolution;
+  PVector[][] field;
+  //BlobField
+  int rowsS, colsS;
+  int resolutionS = 100;
+  ArrayList<ArrayList<ArrayList<Blob>>> squares;
 
   GridField(int r) {
     resolution = r;
     cols = sWidth/resolution;
     rows = sHeight/resolution;
+    
     field = new PVector[cols][rows];
     newFlowField();
-  }
+    
+    
+    colsS = sWidth/resolutionS;
+    rowsS = sHeight/resolutionS;
+    
+    squares = new ArrayList<ArrayList<ArrayList<Blob>>>();
+    for (int i = 0; i < colsS; i++) {
+      squares.add(new ArrayList<ArrayList<Blob>>());
+      for (int j = 0; j < rowsS; j++) {
+        squares.get(i).add(new ArrayList<Blob>());
+      }
+    }
+   }
 
   void newFlowField() {
     noiseSeed((int)random(10000));
@@ -201,60 +258,108 @@ class GridField {
     int row = int(constrain(location.y/resolution,0,rows-1));
     return field[column][row].get();
   }
+  
+  PVector getSquare(PVector location) {
+    return new PVector(int(constrain(location.x/resolutionS,0,colsS-1)),
+                       int(constrain(location.y/resolutionS,0,rowsS-1)));
+  }
 
-
+  PVector updateSquare(PVector location, PVector lastSq, Blob updater) {
+    PVector curSq = getSquare(location);
+    
+    if (lastSq.x == -1 && lastSq.y == -1) {
+      squares.get((int)curSq.x).get((int)curSq.y).add(updater);
+    }
+    
+    else if (!curSq.equals(lastSq)) {
+      squares.get((int)lastSq.x).get((int)lastSq.y).remove(updater);
+      squares.get((int)curSq.x).get((int)curSq.y).add(updater);
+    }
+    return curSq;
+  }
+  
+  ArrayList<Blob> getNeighbors(PVector location, int distance) {
+    ArrayList<Blob> neighbors = new ArrayList<Blob>();
+    
+    for (int i = 0; i < colsS; i++) {
+      ArrayList<ArrayList<Blob>> squaresCol = squares.get(i);
+      
+      for (int j = 0; j < rowsS; j++) {
+        ArrayList<Blob> square = squaresCol.get(j);
+        
+        if (torusDistance(location, new PVector((i+.5)*resolutionS, (j+.5)*resolutionS)) <= distance) {
+          neighbors.addAll(square);
+        }
+      }
+    }
+    
+    return neighbors;
+  }
+  
+  float torusDistance(PVector p1, PVector p2) {
+    float x, y;
+    float a, b;
+    
+    //Determine x
+    if (p1.x > p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x+sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
+    }
+    else if (p1.x < p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x-sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
+    }
+    else x = 0;
+    
+    //Determine y
+    if (p1.y > p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y+sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
+    }
+    else if (p1.y < p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y-sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
+    }
+    else y = 0;
+    
+    return new PVector(x, y).mag();
+  }
 }
 
 
 
 
 
-class Mover {
+class Mover extends Blob {
+  
   //Property Vars
-  PVector location;
-  PVector velocity, noseEnd;
-  PVector acceleration;
-  float radius;
-  float mass;
+  PVector lastSquare;
+  PVector noseEnd;
   
   //AI Vars
   PVector target;
   float tDivisor;
   float closestThreat;
   
-  //Torrific Vars
-  int ghostX;
-    // 0 = no change
-    // 1 = ghost on right
-    // -1 = ghost on left
-  int ghostY;
-    // 0 = no change
-    // 1 = ghost on bottom
-    // -1 = ghost on top
-    
-  //GUI Vars
-  int sWeight;
-  
   Mover(float m, float x, float y) {
+    super(m, x, y);
+    
     //Property Vars
-    location = new PVector(x, y);
-    velocity = new PVector();
+    lastSquare = new PVector(-1, -1);
     noseEnd = new PVector();
-    acceleration = new PVector();
-    mass = m;
-    radius = sqrt(m/PI);
     
     //AI Vars
     target = new PVector();
     tDivisor = 0;
     closestThreat = 1000;
-    
-    //Torrific Vars
-    ghostX = 0;
-    ghostY = 0;
-    
-    //GUI Vars
-    sWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -272,11 +377,44 @@ class Mover {
     target.mult(0);
     tDivisor = 0;
     acceleration.mult(0);
+    
+    lastSquare = grid.updateSquare(location, lastSquare, this);
 
     if (mass < 5) return true; //Self destruct
     
     closestThreat = 1000;
     
+    //New consider
+    /*/ArrayList<Blob> blobs = grid.getNeighbors(location, 500);
+    for (Blob b: blobs) {
+      if (b instanceof Mover) {
+        if (!this.equals(b)) {
+          consider((Mover)b);
+          slurp((Mover)b);
+        }
+      }
+      else if (b instanceof Plant) {
+        if (mass <= DIVSIZE) considerP((Plant)b);
+        slurpP((Plant)b);
+      }
+    }/*/
+    
+    //HYBRID
+    /*/ArrayList<Blob> blobs = grid.getNeighbors(location, 500);
+    for (Blob b: blobs) {
+      if (b instanceof Mover) {
+        if (!this.equals(b)) {
+          consider((Mover)b);
+          slurp((Mover)b);
+        }
+      }
+    }
+    for (int j = 0; j < plants.size(); j++) {
+      if (mass <= DIVSIZE) considerP(plants.get(j));
+      slurpP(plants.get(j));
+    }/*/
+    
+    //Old method of consideration
     for (int j = 0; j < movers.size(); j++) {
       if (!this.equals(movers.get(j))) {
         consider(movers.get(j));
@@ -284,10 +422,8 @@ class Mover {
       }
     }
     for (int j = 0; j < plants.size(); j++) {
-      if (!this.equals(plants.get(j))) {
-        if (mass <= DIVSIZE) considerP(plants.get(j));
-        slurpP(plants.get(j));
-      }
+      if (mass <= DIVSIZE) considerP(plants.get(j));
+      slurpP(plants.get(j));
     }
     
     //Movement Calculations
@@ -520,41 +656,21 @@ class Mover {
 }
 
 
-class Plant {
+class Plant extends Blob {
   
-  //Property Vars
-  PVector location;
-  PVector velocity;
-  PVector acceleration;
-  float radius;
-  float mass;
-  
-  //Torrific Vars
-  int ghostX;
-  int ghostY;
-  
-  //GUI Vars
-  int sWeight;
+  PVector lastSquare;
   
   Plant(float m, float x, float y) {
-    //Property Vars
-    mass = m;
-    radius = sqrt(m/PI);
-    location = new PVector(x, y);
-    velocity = new PVector();
-    acceleration = new PVector();
-    
-    //Torrific Vars
-    ghostX = 0;
-    ghostY = 0;
-    
-    sWeight = 2;
+    super(m, x, y);
+    lastSquare = new PVector(-1, -1);
   }
   
   boolean update() {
     if (mass < 5) return true; //Self-destruct
     
     acceleration.mult(0);
+    
+    lastSquare = grid.updateSquare(location, lastSquare, this);
     
     //Growth limitation
     if (mass < DIVSIZE*2) mass *= growthRate;
@@ -821,47 +937,45 @@ public class UiProperties{
     stroke(0);
     strokeWeight(1);
     textAlign( LEFT, CENTER );
-    try {
     //Mover
-      if (obj instanceof Mover) {
-        Mover blob = (Mover)obj;
-        
-        textSize( titleS );
-        text("Mover #"+num, x+edge, y+titleEdge*3/4);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
+    if (obj instanceof Mover) {
+      Mover blob = (Mover)obj;
       
-      //Plant
-      else if (obj instanceof Plant) {
-        Plant blob = (Plant)obj;
-        
-        textSize( titleS );
-        text("Plant #"+num, x+edge, y+titleEdge/2);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
-    } catch(Exception e){}
+      textSize( titleS );
+      text("Mover #"+num, x+edge, y+titleEdge*3/4);
+      
+      textSize( infoS );
+      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+        x+edge, y+titleEdge+titleS);
+      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*2);
+      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*3);
+      text("Mass: "+(int)blob.mass,
+        x+edge, y+titleEdge+titleS*4);
+      text("Radius: "+(int)blob.radius,
+        x+edge, y+titleEdge+titleS*5);
+    }
+    
+    //Plant
+    else if (obj instanceof Plant) {
+      Plant blob = (Plant)obj;
+      
+      textSize( titleS );
+      text("Plant #"+num, x+edge, y+titleEdge/2);
+      
+      textSize( infoS );
+      text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+        x+edge, y+titleEdge+titleS);
+      text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*2);
+      text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+        x+edge, y+titleEdge+titleS*3);
+      text("Mass: "+(int)blob.mass,
+        x+edge, y+titleEdge+titleS*4);
+      text("Radius: "+(int)blob.radius,
+        x+edge, y+titleEdge+titleS*5);
+    }
   }
 }
 public class UiSlider

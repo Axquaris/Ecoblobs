@@ -1,49 +1,25 @@
-class Mover {
+class Mover extends Blob {
+  
   //Property Vars
-  PVector location;
-  PVector velocity, noseEnd;
-  PVector acceleration;
-  float radius;
-  float mass;
+  PVector lastSquare;
+  PVector noseEnd;
   
   //AI Vars
   PVector target;
   float tDivisor;
   float closestThreat;
   
-  //Torrific Vars
-  int ghostX;
-    // 0 = no change
-    // 1 = ghost on right
-    // -1 = ghost on left
-  int ghostY;
-    // 0 = no change
-    // 1 = ghost on bottom
-    // -1 = ghost on top
-    
-  //GUI Vars
-  int sWeight;
-  
   Mover(float m, float x, float y) {
+    super(m, x, y);
+    
     //Property Vars
-    location = new PVector(x, y);
-    velocity = new PVector();
+    lastSquare = new PVector(-1, -1);
     noseEnd = new PVector();
-    acceleration = new PVector();
-    mass = m;
-    radius = sqrt(m/PI);
     
     //AI Vars
     target = new PVector();
     tDivisor = 0;
     closestThreat = 1000;
-    
-    //Torrific Vars
-    ghostX = 0;
-    ghostY = 0;
-    
-    //GUI Vars
-    sWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -61,11 +37,44 @@ class Mover {
     target.mult(0);
     tDivisor = 0;
     acceleration.mult(0);
+    
+    lastSquare = grid.updateSquare(location, lastSquare, this);
 
     if (mass < 5) return true; //Self destruct
     
     closestThreat = 1000;
     
+    //New consider
+    /*/ArrayList<Blob> blobs = grid.getNeighbors(location, 500);
+    for (Blob b: blobs) {
+      if (b instanceof Mover) {
+        if (!this.equals(b)) {
+          consider((Mover)b);
+          slurp((Mover)b);
+        }
+      }
+      else if (b instanceof Plant) {
+        if (mass <= DIVSIZE) considerP((Plant)b);
+        slurpP((Plant)b);
+      }
+    }/*/
+    
+    //HYBRID
+    /*/ArrayList<Blob> blobs = grid.getNeighbors(location, 500);
+    for (Blob b: blobs) {
+      if (b instanceof Mover) {
+        if (!this.equals(b)) {
+          consider((Mover)b);
+          slurp((Mover)b);
+        }
+      }
+    }
+    for (int j = 0; j < plants.size(); j++) {
+      if (mass <= DIVSIZE) considerP(plants.get(j));
+      slurpP(plants.get(j));
+    }/*/
+    
+    //Old method of consideration
     for (int j = 0; j < movers.size(); j++) {
       if (!this.equals(movers.get(j))) {
         consider(movers.get(j));
@@ -73,10 +82,8 @@ class Mover {
       }
     }
     for (int j = 0; j < plants.size(); j++) {
-      if (!this.equals(plants.get(j))) {
-        if (mass <= DIVSIZE) considerP(plants.get(j));
-        slurpP(plants.get(j));
-      }
+      if (mass <= DIVSIZE) considerP(plants.get(j));
+      slurpP(plants.get(j));
     }
     
     //Movement Calculations

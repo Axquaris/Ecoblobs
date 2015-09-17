@@ -1,38 +1,18 @@
-class Plant {
+class Plant extends Blob {
   
-  //Property Vars
-  PVector location;
-  PVector velocity;
-  PVector acceleration;
-  float radius;
-  float mass;
-  
-  //Torrific Vars
-  int ghostX;
-  int ghostY;
-  
-  //GUI Vars
-  int sWeight;
+  PVector lastSquare;
   
   Plant(float m, float x, float y) {
-    //Property Vars
-    mass = m;
-    radius = sqrt(m/PI);
-    location = new PVector(x, y);
-    velocity = new PVector();
-    acceleration = new PVector();
-    
-    //Torrific Vars
-    ghostX = 0;
-    ghostY = 0;
-    
-    sWeight = 2;
+    super(m, x, y);
+    lastSquare = new PVector(-1, -1);
   }
   
   boolean update() {
     if (mass < 5) return true; //Self-destruct
     
     acceleration.mult(0);
+    
+    lastSquare = grid.updateSquare(location, lastSquare, this);
     
     //Growth limitation
     if (mass < DIVSIZE*2) mass *= growthRate;
