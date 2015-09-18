@@ -4,6 +4,7 @@ import de.bezier.guido.*;
 public int sHeight;
 public int sWidth;
 final static int DIVSIZE = 1000;
+final static int DIVSIZEP = 200;
 final static float NOMFACTOR = 1.2; //if (myMass > itsMass * NOMFACTOR) then its NOMABBLE
 final float BORDERSIZE = sqrt(DIVSIZE/PI);
 final float PBORDERSIZE = sqrt(10000/PI);
@@ -35,14 +36,14 @@ void setup() {
   ellipseMode(RADIUS);
   
   metabolismRate = 0.998;
-  growthRate = 1.01;
+  growthRate = 1.008;
   
   //Create Blobs
   grid = new GridField(50);
   movers = new ArrayList<Mover>();
-  for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
+  for (int i = 0; i < 10; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
   plants = new ArrayList<Plant>();
-  for (int i = 0; i < 5; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
+  for (int i = 0; i < 15; i++) plants.add(new Plant(random(200, 800),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
   
   //UI
   Interactive.make( this );
@@ -68,10 +69,7 @@ void draw() {
   //Update Plants
   float pMass = 0;
   for (int i = 0; i < plants.size(); i++) {
-    if(plants.get(i).update()) {
-      plants.remove(i);
-      plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
-    }
+    if(plants.get(i).update()) plants.remove(i);
     else pMass += plants.get(i).mass;
   }
   graph.plotB(pMass);
@@ -110,7 +108,7 @@ void mousePressed() {
   for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
   for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
   
-  for (int i = 0; i < movers.size(); i++) {
+  for (int i = movers.size()-1; i >=0 ; i--) {
     float distance = sqrt(pow(movers.get(i).location.x-mouseX, 2)
                         +pow(movers.get(i).location.y-mouseY, 2));
     if ( distance <= movers.get(i).radius ) {
@@ -120,7 +118,7 @@ void mousePressed() {
       return;
     }
   }
-  for (int i = 0; i < plants.size(); i++) {
+  for (int i = plants.size()-1; i >=0 ; i--) {
     float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
                         +pow(plants.get(i).location.y-mouseY, 2));
     if ( distance <= plants.get(i).radius ) {
@@ -136,16 +134,16 @@ void mousePressed() {
 
 void setupUi() {
   reset = new UiButton ( 10, sHeight+10, 120, 80, "RESET");
-  moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 30/100, 100, 35 );
+  moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 10/100, 100, 35 );
   moversCtrl.button = color(75);
-  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 5/10, 10, 35 );
+  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 15/20, 20, 35 );
   plantsCtrl.button = color(93, 156, 51, 250);
   
   
   moversMCtrl = new UiSlider( 400, sHeight+10, 240, 35, 0.998, -1 , 70);
   moversMCtrl.button = color(75);
   moversMCtrl.buttonW = moversMCtrl.height*2;
-  plantsMCtrl = new UiSlider( 400, sHeight+55, 240, 35, 1.01, -2, 70 );
+  plantsMCtrl = new UiSlider( 400, sHeight+55, 240, 35, 1.008, -2, 70 );
   plantsMCtrl.button = color(93, 156, 51, 250);
   plantsMCtrl.buttonW = plantsMCtrl.height*2;
   
