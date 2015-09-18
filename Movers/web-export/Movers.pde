@@ -4,6 +4,7 @@ import de.bezier.guido.*;
 public int sHeight;
 public int sWidth;
 final static int DIVSIZE = 1000;
+final static int DIVSIZEP = 200;
 final static float NOMFACTOR = 1.2; //if (myMass > itsMass * NOMFACTOR) then its NOMABBLE
 final float BORDERSIZE = sqrt(DIVSIZE/PI);
 final float PBORDERSIZE = sqrt(10000/PI);
@@ -35,14 +36,14 @@ void setup() {
   ellipseMode(RADIUS);
   
   metabolismRate = 0.998;
-  growthRate = 1.01;
+  growthRate = 1.008;
   
   //Create Blobs
   grid = new GridField(50);
   movers = new ArrayList<Mover>();
-  for (int i = 0; i < 30; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
+  for (int i = 0; i < 10; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
   plants = new ArrayList<Plant>();
-  for (int i = 0; i < 5; i++) plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
+  for (int i = 0; i < 15; i++) plants.add(new Plant(random(200, 800),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
   
   //UI
   Interactive.make( this );
@@ -51,7 +52,7 @@ void setup() {
   //Debug
   debug = false;
   
-  //noLoop(); //Starts sketch paused for blog
+  noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
@@ -68,10 +69,7 @@ void draw() {
   //Update Plants
   float pMass = 0;
   for (int i = 0; i < plants.size(); i++) {
-    if(plants.get(i).update()) {
-      plants.remove(i);
-      plants.add(new Plant(random(100, 500),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
-    }
+    if(plants.get(i).update()) plants.remove(i);
     else pMass += plants.get(i).mass;
   }
   graph.plotB(pMass);
@@ -110,7 +108,7 @@ void mousePressed() {
   for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
   for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
   
-  for (int i = 0; i < movers.size(); i++) {
+  for (int i = movers.size()-1; i >=0 ; i--) {
     float distance = sqrt(pow(movers.get(i).location.x-mouseX, 2)
                         +pow(movers.get(i).location.y-mouseY, 2));
     if ( distance <= movers.get(i).radius ) {
@@ -120,7 +118,7 @@ void mousePressed() {
       return;
     }
   }
-  for (int i = 0; i < plants.size(); i++) {
+  for (int i = plants.size()-1; i >=0 ; i--) {
     float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
                         +pow(plants.get(i).location.y-mouseY, 2));
     if ( distance <= plants.get(i).radius ) {
@@ -136,16 +134,16 @@ void mousePressed() {
 
 void setupUi() {
   reset = new UiButton ( 10, sHeight+10, 120, 80, "RESET");
-  moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 30/100, 100, 35 );
+  moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 10/100, 100, 35 );
   moversCtrl.button = color(75);
-  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 5/10, 10, 35 );
+  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 15/20, 20, 35 );
   plantsCtrl.button = color(93, 156, 51, 250);
   
   
   moversMCtrl = new UiSlider( 400, sHeight+10, 240, 35, 0.998, -1 , 70);
   moversMCtrl.button = color(75);
   moversMCtrl.buttonW = moversMCtrl.height*2;
-  plantsMCtrl = new UiSlider( 400, sHeight+55, 240, 35, 1.01, -2, 70 );
+  plantsMCtrl = new UiSlider( 400, sHeight+55, 240, 35, 1.008, -2, 70 );
   plantsMCtrl.button = color(93, 156, 51, 250);
   plantsMCtrl.buttonW = plantsMCtrl.height*2;
   
@@ -267,7 +265,7 @@ class Mover {
   Mover(float m, float x, float y, PVector velocity) {
     this(m, x, y);
     this.velocity = new PVector(velocity.x, velocity.y);
-   }
+  }
   
   void addTarget(PVector aTarget, float strength) {
     target.add(aTarget);
@@ -295,13 +293,19 @@ class Mover {
       slurpP(plants.get(j));
     }
     
+    //Current Calculations
+    PVector current = grid.getFlow(location);
+    current.setMag(radius*0.4);
+    current.div(mass);
+    
     //Movement Calculations
     target.div(tDivisor);
     acceleration = target;
     acceleration.setMag((mass*200)/DIVSIZE);
-    
     acceleration.div(mass);
+    
     velocity.add(acceleration);
+    velocity.add(current);
     velocity.limit(1+mass/DIVSIZE);
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
@@ -310,7 +314,7 @@ class Mover {
     torify();
     
     //Quick Fix
-    if (location.x == 0 && location.y == 0) location.add(velocity);
+    //if (location.x == 0 && location.y == 0) location.add(new PVector(20, 20));
     
     //Division test
     if (mass > DIVSIZE && closestThreat > 100) {
@@ -388,7 +392,7 @@ class Mover {
     distance = constrain(distance, 5.0, 3000.0);
     
     //AI decision
-    float strength = m.mass/pow(distance, 2)/4;
+    float strength = m.mass/pow(distance, 2)/2;
     
     //Set importance of target
     pointer.mult(strength);
@@ -401,12 +405,12 @@ class Mover {
     if (distance <= radius + m.radius) {
       float slurp = 0;
       
-      if (m.mass <= mass/30) slurp = m.mass;
-      else slurp = mass/30;
+      if (m.mass <= mass/25) slurp = m.mass;
+      else slurp = mass/25;
       if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
       
       m.mass -= slurp;
-      mass += slurp*0.3;
+      mass += slurp*0.5;
       m.radius = sqrt(m.mass/PI);
     }
   }
@@ -536,6 +540,8 @@ class Plant {
   PVector acceleration;
   float radius;
   float mass;
+  int divCycle;
+  int divCycleLength;
   
   //Torrific Vars
   int ghostX;
@@ -551,6 +557,8 @@ class Plant {
     location = new PVector(x, y);
     velocity = new PVector();
     acceleration = new PVector();
+    divCycleLength = (int )(Math. random() * 5 + 10);
+    divCycle = divCycleLength;
     
     //Torrific Vars
     ghostX = 0;
@@ -559,30 +567,61 @@ class Plant {
     sWeight = 2;
   }
   
+  Plant(float m, float x, float y, PVector velocity) {
+    this(m, x, y);
+    this.velocity = new PVector(velocity.x, velocity.y);
+  }
+  
   boolean update() {
     if (mass < 5) return true; //Self-destruct
     
     acceleration.mult(0);
     
-    //Growth limitation
-    if (mass < DIVSIZE*2) mass *= growthRate;
-    else {
-      float g = map(mass, DIVSIZE*2, 10000, 0, growthRate-1);
-      mass *= growthRate - g;
-    }
-    
+    //Movement
     acceleration = grid.getFlow(location);
-    acceleration.setMag(100);
+    acceleration.setMag(radius*0.8);
     acceleration.div(mass);
     
     velocity.add(acceleration);
     velocity.limit(1);
     location.add(velocity);
     
+    //Torification
     torify();
+    
+    //Division
+    if (mass > DIVSIZEP && divCycle % divCycleLength == 0) {
+      int neighbors;
+      
+      for (int i = 0; i < plants.size(); i++) {
+        if (torusPointer(location, plants.get(i).location).mag() <= 100) neighbors++;
+      }
+      if (neighbors <= 4) divide();
+    }
+    if(divCycle > divCycleLength) divCycle = 0;
+    else divCycle++;
+    
+    //Growth limitation
+    if (mass < DIVSIZEP/2) mass *= growthRate;
+    else {
+      float g = map(mass, 0, DIVSIZEP*2, 0, growthRate-1);
+      mass *= growthRate - g;
+    }
     
     radius = sqrt(mass/PI);
     return false;
+  }
+  
+  void divide() {
+    PVector split = new PVector.random2D();
+    split.mult(2);
+    
+    plants.add(new Plant(mass*0.5, location.x, location.y, PVector.add(velocity, split)));
+    
+    split.mult(-1);
+    velocity.add(split);
+    mass *= 0.5;
+    radius = sqrt(mass/PI);
   }
 
   void display() {
@@ -612,6 +651,43 @@ class Plant {
   //Subfunction for displayGhost
   void displayGhost(int xShift, int yShift) {
     ellipse(location.x+xShift, location.y+yShift, radius, radius);
+  }
+  
+  PVector torusPointer(PVector p1, PVector p2) {
+    float x, y;
+    float a, b;
+    
+    //Determine x
+    if (p1.x > p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x+sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
+    }
+    else if (p1.x < p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x-sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
+    }
+    else x = 0;
+    
+    //Determine y
+    if (p1.y > p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y+sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
+    }
+    else if (p1.y < p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y-sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
+    }
+    else y = 0;
+    
+    return new PVector(x, y);
   }
   
   //Makes sketch even more torrific than before :D
@@ -674,7 +750,7 @@ public class UiButton {
     movers = new ArrayList<Mover>();
     for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
     plants = new ArrayList<Plant>();
-    for (int i = 0; i < plantsCtrl.value*10; i++) plants.add(new Plant(random(100, 500),random(sWidth),random(sHeight)));
+    for (int i = 0; i < plantsCtrl.value*20; i++) plants.add(new Plant(random(200, 800),random(sWidth),random(sHeight)));
     metabolismRate = moversMCtrl.value;
     growthRate = plantsMCtrl.value;
     graph.reset();

@@ -49,7 +49,7 @@ class Mover {
   Mover(float m, float x, float y, PVector velocity) {
     this(m, x, y);
     this.velocity = new PVector(velocity.x, velocity.y);
-   }
+  }
   
   void addTarget(PVector aTarget, float strength) {
     target.add(aTarget);
@@ -77,13 +77,19 @@ class Mover {
       slurpP(plants.get(j));
     }
     
+    //Current Calculations
+    PVector current = grid.getFlow(location);
+    current.setMag(radius*0.4);
+    current.div(mass);
+    
     //Movement Calculations
     target.div(tDivisor);
     acceleration = target;
     acceleration.setMag((mass*200)/DIVSIZE);
-    
     acceleration.div(mass);
+    
     velocity.add(acceleration);
+    velocity.add(current);
     velocity.limit(1+mass/DIVSIZE);
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
@@ -92,7 +98,7 @@ class Mover {
     torify();
     
     //Quick Fix
-    if (location.x == 0 && location.y == 0) location.add(velocity);
+    //if (location.x == 0 && location.y == 0) location.add(new PVector(20, 20));
     
     //Division test
     if (mass > DIVSIZE && closestThreat > 100) {
@@ -170,7 +176,7 @@ class Mover {
     distance = constrain(distance, 5.0, 3000.0);
     
     //AI decision
-    float strength = m.mass/pow(distance, 2)/4;
+    float strength = m.mass/pow(distance, 2)/2;
     
     //Set importance of target
     pointer.mult(strength);
@@ -183,12 +189,12 @@ class Mover {
     if (distance <= radius + m.radius) {
       float slurp = 0;
       
-      if (m.mass <= mass/30) slurp = m.mass;
-      else slurp = mass/30;
+      if (m.mass <= mass/25) slurp = m.mass;
+      else slurp = mass/25;
       if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
       
       m.mass -= slurp;
-      mass += slurp*0.3;
+      mass += slurp*0.5;
       m.radius = sqrt(m.mass/PI);
     }
   }
