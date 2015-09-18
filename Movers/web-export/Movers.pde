@@ -591,7 +591,7 @@ class Plant {
     
     //Division
     if (mass > DIVSIZEP && divCycle % divCycleLength == 0) {
-      int neighbors;
+      int neighbors = 0;
       
       for (int i = 0; i < plants.size(); i++) {
         if (torusPointer(location, plants.get(i).location).mag() <= 100) neighbors++;
@@ -613,7 +613,7 @@ class Plant {
   }
   
   void divide() {
-    PVector split = new PVector.random2D();
+    PVector split = PVector.random2D();
     split.mult(2);
     
     plants.add(new Plant(mass*0.5, location.x, location.y, PVector.add(velocity, split)));
@@ -732,8 +732,6 @@ class Plant {
     sWeight = 2;
   }
 }
-
-
 public class UiButton {
   float x, y, width, height;
   String s;
