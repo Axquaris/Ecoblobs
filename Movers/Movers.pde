@@ -52,7 +52,7 @@ void setup() {
   //Debug
   debug = false;
   
-  noLoop(); //Starts sketch paused for blog
+  //noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {

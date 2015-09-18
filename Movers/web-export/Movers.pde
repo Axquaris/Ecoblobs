@@ -52,7 +52,7 @@ void setup() {
   //Debug
   debug = false;
   
-  noLoop(); //Starts sketch paused for blog
+  //noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
@@ -294,9 +294,9 @@ class Mover {
     }
     
     //Current Calculations
-    PVector current = grid.getFlow(location);
-    current.setMag(radius*0.4);
-    current.div(mass);
+    //PVector current = grid.getFlow(location);
+    //current.setMag(radius*0.4);
+    //current.div(mass);
     
     //Movement Calculations
     target.div(tDivisor);
@@ -305,7 +305,7 @@ class Mover {
     acceleration.div(mass);
     
     velocity.add(acceleration);
-    velocity.add(current);
+    //velocity.add(current);
     velocity.limit(1+mass/DIVSIZE);
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
