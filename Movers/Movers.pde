@@ -103,6 +103,10 @@ void keyPressed() {
   }
 }
 
+void toggleDebug() {
+  debug = !debug;
+}
+
 void mousePressed() {
   for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
   for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
