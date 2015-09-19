@@ -3,16 +3,16 @@
 
 ### Current Features
   * GUI that allows the user to tweak some simple variables and see the relative total masses of movers and plants
-  * Plants that grow at a constant rate and respawn when eaten
+  * Plants that grow at a constant rate and divide when there are not too many plants nearby
   * Blobs that eat smaller blobs, avoid bigger blobs, eat plants, and divide.
+  * A torus-shaped world
+  * underwater currents
 
 ### Plans
   * Sexual reproduction
-  * Plant reproduction
   * Genetics
   * Speciation
   * Realitic balancing (Ecosystems that resemble real ones)
-  * **Javascript Version???**
 
 ### Want to help?
   Download Processing 2 and add the guido library through Sketch > Import Library > Add Library... 
