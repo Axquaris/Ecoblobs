@@ -1,49 +1,22 @@
-class Mover {
+class Mover extends Blob{
   //Property Vars
-  PVector location;
-  PVector velocity, noseEnd;
-  PVector acceleration;
-  float radius;
-  float mass;
+  PVector noseEnd;
   
   //AI Vars
   PVector target;
   float tDivisor;
   float closestThreat;
   
-  //Torrific Vars
-  int ghostX;
-    // 0 = no change
-    // 1 = ghost on right
-    // -1 = ghost on left
-  int ghostY;
-    // 0 = no change
-    // 1 = ghost on bottom
-    // -1 = ghost on top
-    
-  //GUI Vars
-  int sWeight;
-  
   Mover(float m, float x, float y) {
+    super(m, x, y);
+    
     //Property Vars
-    location = new PVector(x, y);
-    velocity = new PVector();
     noseEnd = new PVector();
-    acceleration = new PVector();
-    mass = m;
-    radius = sqrt(m/PI);
     
     //AI Vars
     target = new PVector();
     tDivisor = 0;
     closestThreat = 1000;
-    
-    //Torrific Vars
-    ghostX = 0;
-    ghostY = 0;
-    
-    //GUI Vars
-    sWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -114,12 +87,20 @@ class Mover {
 
   void display() {
     radius = sqrt(mass/PI);
+    
     stroke(0);
     strokeWeight(sWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
+    
+    displayGhosts();//Function from Blob class
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
-    line(location.x, location.y, location.x+target.x, location.y+target.y);
+  }
+  
+  //Subfunction for displayGhosts in Blob class
+  void displayGhost(int xShift, int yShift) {
+    ellipse(location.x+xShift, location.y+yShift, radius, radius);
+    line(location.x+xShift, location.y+yShift, location.x+xShift+noseEnd.x, location.y+yShift+noseEnd.y);
   }
   
   void consider(Mover m) {
@@ -211,101 +192,6 @@ class Mover {
     radius = sqrt(mass/PI);
   }
   
-  //Find the shortest path between 2 objects on torus
-  PVector torusPointer(PVector p1, PVector p2) {
-    float x, y;
-    float a, b;
-    
-    //Determine x
-    if (p1.x > p2.x) {
-      a = p1.x - p2.x;
-      b = p1.x - (p2.x+sWidth);
-      if (abs(a) <= abs(b)) x = a;
-      else x = b;
-    }
-    else if (p1.x < p2.x) {
-      a = p1.x - p2.x;
-      b = p1.x - (p2.x-sWidth);
-      if (abs(a) <= abs(b)) x = a;
-      else x = b;
-    }
-    else x = 0;
-    
-    //Determine y
-    if (p1.y > p2.y) {
-      a = p1.y - p2.y;
-      b = p1.y - (p2.y+sHeight);
-      if (abs(a) <= abs(b)) y = a;
-      else y = b;
-    }
-    else if (p1.y < p2.y) {
-      a = p1.y - p2.y;
-      b = p1.y - (p2.y-sHeight);
-      if (abs(a) <= abs(b)) y = a;
-      else y = b;
-    }
-    else y = 0;
-    
-    return new PVector(x, y);
-  }
-  
-  //Display toriod ghost if applicable
-  void displayGhosts() {
-    radius = sqrt(mass/PI);
-    stroke(0);
-    strokeWeight(sWeight);
-    fill(150 - 100*(mass/DIVSIZE), 200);
-    
-    if (ghostX != 0 && ghostY != 0) {
-      displayGhost(ghostX*sWidth, 0);
-      displayGhost(0, ghostY * sHeight);
-      displayGhost(ghostX*sWidth, ghostY * sHeight);
-    }
-    else if (ghostX != 0) displayGhost(ghostX*sWidth, 0);
-    else if (ghostY != 0) displayGhost(0, ghostY * sHeight);
-  }
-  
-  //Subfunction for displayGhost
-  void displayGhost(int xShift, int yShift) {
-    ellipse(location.x+xShift, location.y+yShift, radius, radius);
-    line(location.x+xShift, location.y+yShift, location.x+xShift+noseEnd.x, location.y+yShift+noseEnd.y);
-  }
-  
-  //Makes sketch even more torrific than before :D
-  void torify() {
-    if (location.x <= BORDERSIZE) {
-      ghostX = 1;
-      if (location.x <= 0) {
-        location.x += sWidth;
-        ghostX = -1;
-      }
-    }
-    else if (location.x >= sWidth - BORDERSIZE) {
-      ghostX = -1;
-      if (location.x >= sWidth) {
-        location.x -= sWidth;
-        ghostX = 1;
-      }
-    }
-    else ghostX = 0;
-    
-    if (location.y <= BORDERSIZE) {
-      ghostY = 1;
-      if (location.y <= 0) {
-        location.y += sHeight;
-        ghostY = -1;
-      }
-    }
-    else if (location.y >= sHeight - BORDERSIZE) {
-      ghostY = -1;
-      if (location.y >= sHeight) {
-        location.y -= sHeight;
-        ghostY = 1;
-      }
-    }
-    else ghostY = 0;
-  }
-  
   void focus() {
     sWeight = 6;
   }
@@ -314,5 +200,3 @@ class Mover {
     sWeight = 2;
   }
 }
-
-

@@ -79,7 +79,6 @@ void draw() {
   //Display blobs
   for (int i = 0; i < plants.size(); i++) plants.get(i).displayGhosts();
   for (int i = 0; i < plants.size(); i++) plants.get(i).display();
-  for (int i = 0; i < movers.size(); i++) movers.get(i).displayGhosts();
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
 
   //GUI
@@ -152,4 +151,3 @@ void setupUi() {
   graph = new UiGrapherII(650, height-150, 350, 150, "Blob Masses");
   display = new UiProperties(650, height-150, 350, 150);
 }
-
