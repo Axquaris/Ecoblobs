@@ -37,7 +37,7 @@ class Carnivore extends Mover{
     acceleration.div(mass);
     
     velocity.add(acceleration);
-    velocity.limit((1+mass/DIVSIZE)*1.15);
+    velocity.limit((1+mass/DIVSIZE)*1.25);
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
     
@@ -45,7 +45,7 @@ class Carnivore extends Mover{
     torify();
     
     //Division test
-    if (mass > DIVSIZE && closestThreat > 50) {
+    if (mass > DIVSIZE && closestThreat > 100) {
       divide();
     }
     
@@ -81,7 +81,7 @@ class Carnivore extends Mover{
     float strength = 0;
     
     //AI decisions
-    if (distance < 2*(radius + m.radius)) strength = -1000/distance/distance;
+    if (distance < 2*(radius + m.radius)) strength = -10/distance/distance;
     
     //Set importance of target
     pointer.mult(strength);
@@ -97,7 +97,7 @@ class Carnivore extends Mover{
     
     //AI decisions
     if (mass <= DIVSIZE) {
-      strength = m.mass*100/pow(distance, 3);
+      strength = m.mass*10000/pow(distance, 4);
       if (distance < closestThreat) closestThreat = distance;
     } 
     else {

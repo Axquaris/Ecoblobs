@@ -26,22 +26,27 @@ public class UiProperties{
     
     //Carnivore
     if (obj instanceof Carnivore) {
-      Plant blob = (Plant)obj;
-      text("Plant #"+num, x+edge, y+titleEdge/2);
+      Carnivore blob = (Carnivore)obj;
+      text("Carnivore #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
     }
     
     //Mover
     else if (obj instanceof Mover) {
       Mover blob = (Mover)obj;
-      text("Herbivore #"+num, x+edge, y+titleEdge*3/4);
+      text("Herbivore #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
     }
     
     //Plant
     else if (obj instanceof Plant) {
       Plant blob = (Plant)obj;
-      text("Carnivore #"+num, x+edge, y+titleEdge/2);
+      text("Plant #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
     }
-    
+  }
+  
+  void displayInfo(Blob blob) {
     textSize( infoS );
     text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
       x+edge, y+titleEdge+titleS);

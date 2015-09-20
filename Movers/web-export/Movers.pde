@@ -18,8 +18,10 @@ public ArrayList<Plant> plants = new ArrayList<Plant>();
 
 //UI ELEMENTS
 UiButton reset;
+UiSlider carnivoresCtrl;
 UiSlider moversCtrl;
 UiSlider plantsCtrl;
+UiSlider carnivoresMCtrl;
 UiSlider moversMCtrl;
 UiSlider plantsMCtrl;
 Object focus;
@@ -29,11 +31,12 @@ UiProperties display;
 
 //Debug Mode
 public boolean debug;
+public int frame;
 
 void setup() {
   frameRate(32);
   size(1000,800);
-  sHeight = 700;
+  sHeight = height-102;
   sWidth = width;
   ellipseMode(RADIUS);
   
@@ -53,8 +56,9 @@ void setup() {
   
   //Debug
   debug = false;
+  frame = 0;
   
-  //noLoop(); //Starts sketch paused for blog
+  noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
@@ -94,7 +98,7 @@ void draw() {
   //GUI
   strokeWeight(1);
   fill(57, 103, 144);
-  rect(0, sHeight, 650, 100);
+  rect(0, sHeight, 650, 150);
   
   if (focusN == -1)  graph.render();
   else display.render(focus, focusN);
@@ -105,6 +109,7 @@ void draw() {
     textSize( 40 );
     text("FPS: "+(int)frameRate, 10, 10);
   }
+  frame++;
 }
 
 void keyPressed() {
@@ -157,16 +162,21 @@ void mousePressed() {
 }
 
 void setupUi() {
-  reset = new UiButton ( 10, sHeight+10, 120, 80, "RESET");
-  moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 0, 100, 10);
+  reset = new UiButton ( 15, sHeight+10, 120, 82, "RESET");
+  
+  carnivoresCtrl = new UiSlider( 150, sHeight+3, 240, 30, 0, 10, 3);
+  carnivoresCtrl.button = color(145, 20, 5);
+  carnivoresMCtrl = new UiSlider( 400, sHeight+3, 240, 30, 0.9900, 1, 0.9975);
+  carnivoresMCtrl.button = color(145, 20, 5);
+  
+  moversCtrl = new UiSlider( 150, sHeight+36, 240, 30, 0, 100, 10);
   moversCtrl.button = color(75);
-  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 0, 50, 20);
-  plantsCtrl.button = color(93, 156, 51, 250);
-  
-  
-  moversMCtrl = new UiSlider( 400, sHeight+10, 240, 35, 0.950, 1, 0.998);
+  moversMCtrl = new UiSlider( 400, sHeight+36, 240, 30, 0.9500, 1, 0.998);
   moversMCtrl.button = color(75);
-  plantsMCtrl = new UiSlider( 400, sHeight+55, 240, 35, 1.0, 1.050, 1.008);
+  
+  plantsCtrl = new UiSlider( 150, sHeight+69, 240, 30, 0, 50, 20);
+  plantsCtrl.button = color(93, 156, 51, 250);
+  plantsMCtrl = new UiSlider( 400, sHeight+69, 240, 30, 1.0, 1.050, 1.016);
   plantsMCtrl.button = color(93, 156, 51, 250);
   
   focus = null;
@@ -177,18 +187,27 @@ void setupUi() {
 
 void spawnBlobs() {
   carnivores = new ArrayList<Carnivore>();
-  for (int i = 0; i < 3; i++) carnivores.add(new Carnivore(DIVSIZE*0.8,random(sWidth),random(sHeight)));
+  for (int i = 0; i < carnivoresCtrl.getValue(); i++) carnivores.add(
+            new Carnivore(DIVSIZE*0.8,random(sWidth),random(sHeight))
+            );
   movers = new ArrayList<Mover>();
-  for (int i = 0; i < moversCtrl.getValue(); i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
+  for (int i = 0; i < moversCtrl.getValue(); i++) movers.add(
+            new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight))
+            );
   plants = new ArrayList<Plant>();
-  for (int i = 0; i < plantsCtrl.getValue(); i++) plants.add(new Plant(random(200, 800),random(sWidth),random(sHeight)));
+  for (int i = 0; i < plantsCtrl.getValue(); i++) plants.add(
+            new Plant(random(DIVSIZEP, DIVSIZEP*4),random(sWidth),random(sHeight))
+            );
 }
 
 void updateVars() {
+  metabolismRateC = carnivoresMCtrl.getValue();
   metabolismRate = moversMCtrl.getValue();
   growthRate = plantsMCtrl.getValue();
   graph.reset();
   grid.newFlowField();
+  
+  frame = 0;
 }
 class Blob {
   
@@ -348,7 +367,7 @@ class Carnivore extends Mover{
     acceleration.div(mass);
     
     velocity.add(acceleration);
-    velocity.limit((1+mass/DIVSIZE)*1.15);
+    velocity.limit((1+mass/DIVSIZE)*1.25);
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
     
@@ -356,7 +375,7 @@ class Carnivore extends Mover{
     torify();
     
     //Division test
-    if (mass > DIVSIZE && closestThreat > 50) {
+    if (mass > DIVSIZE && closestThreat > 100) {
       divide();
     }
     
@@ -392,7 +411,7 @@ class Carnivore extends Mover{
     float strength = 0;
     
     //AI decisions
-    if (distance < 2*(radius + m.radius)) strength = -1000/distance/distance;
+    if (distance < 2*(radius + m.radius)) strength = -10/distance/distance;
     
     //Set importance of target
     pointer.mult(strength);
@@ -408,7 +427,7 @@ class Carnivore extends Mover{
     
     //AI decisions
     if (mass <= DIVSIZE) {
-      strength = m.mass*100/pow(distance, 3);
+      strength = m.mass*10000/pow(distance, 4);
       if (distance < closestThreat) closestThreat = distance;
     } 
     else {
@@ -583,9 +602,6 @@ class Mover extends Blob{
     //Torification :)
     torify();
     
-    //Quick Fix
-    //if (location.x == 0 && location.y == 0) location.add(new PVector(20, 20));
-    
     //Division test
     if (mass > DIVSIZE && closestThreat > 300) {
       divide();
@@ -639,7 +655,7 @@ class Mover extends Blob{
     float strength = 0;
     
     //AI decisions
-    if (distance < 2*(radius + m.radius)) strength = -100/distance/distance;
+    if (distance < 2*(radius + m.radius)) strength = -10/distance/distance;
     
     //Set importance of target
     pointer.mult(strength);
@@ -663,7 +679,7 @@ class Mover extends Blob{
   
   void slurpP(Plant m) {
     float distance = torusPointer(m.location, location).mag();
-    if (distance <= radius + m.radius) {
+    if (distance <= radius + m.radius && frame > 4) {
       float slurp = 0;
       
       if (m.mass <= mass/25) slurp = m.mass;
@@ -705,7 +721,7 @@ class Plant extends Blob{
   Plant(float m, float x, float y) {
     super(m, x, y);
     //Property Vars
-    divCycleLength = (int)(Math. random() * 5 + 10);
+    divCycleLength = (int)(Math.random() * 20 + 10);
     divCycle = divCycleLength;
   }
   
@@ -721,7 +737,7 @@ class Plant extends Blob{
     
     //Movement
     acceleration = grid.getFlow(location);
-    acceleration.setMag(radius*0.5);
+    acceleration.setMag(radius*0.4);
     acceleration.div(mass);
     
     velocity.add(acceleration);
@@ -744,9 +760,9 @@ class Plant extends Blob{
     else divCycle++;
     
     //Growth limitation
-    if (mass < DIVSIZEP/2) mass *= growthRate;
+    if (mass <= DIVSIZEP/2) mass *= growthRate;
     else {
-      float g = map(mass, 0, DIVSIZEP*2, 0, growthRate-1);
+      float g = map(mass, DIVSIZEP/2, DIVSIZEP*2, 0, growthRate-1);
       mass *= growthRate - g;
     }
     
@@ -988,22 +1004,27 @@ public class UiProperties{
     
     //Carnivore
     if (obj instanceof Carnivore) {
-      Plant blob = (Plant)obj;
-      text("Plant #"+num, x+edge, y+titleEdge/2);
+      Carnivore blob = (Carnivore)obj;
+      text("Carnivore #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
     }
     
     //Mover
     else if (obj instanceof Mover) {
       Mover blob = (Mover)obj;
-      text("Herbivore #"+num, x+edge, y+titleEdge*3/4);
+      text("Herbivore #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
     }
     
     //Plant
     else if (obj instanceof Plant) {
       Plant blob = (Plant)obj;
-      text("Carnivore #"+num, x+edge, y+titleEdge/2);
+      text("Plant #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
     }
-    
+  }
+  
+  void displayInfo(Blob blob) {
     textSize( infoS );
     text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
       x+edge, y+titleEdge+titleS);
@@ -1039,7 +1060,7 @@ public class UiSlider
     this.value = value;
     
     if (max-min < 1)
-      buttonW = height*2;
+      buttonW = height*2.5;
     else
       buttonW = height;
       
@@ -1082,14 +1103,19 @@ public class UiSlider
     textSize( 20 );
     textAlign( CENTER, CENTER );
     fill(0);
-    text( value, valueX+buttonW/2, y+height/2);
+    if (max-min < 1)
+      text( value.toString(), valueX+buttonW/2, y+height/2);
+    else
+      text( (int)value, valueX+buttonW/2, y+height/2);
   }
   
   //Specific cases
   float getValue() {
     float v = map( valueX, x, x+width-buttonW, min, max );
-    if (max-min < 1)
-      return v;
+    if (min == 0.99)
+      return round(v*10000)/10000;
+    else if (max-min <= 1)
+      return round(v*1000)/1000;
     else
       return round(v);
   }

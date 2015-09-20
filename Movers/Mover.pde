@@ -68,9 +68,6 @@ class Mover extends Blob{
     //Torification :)
     torify();
     
-    //Quick Fix
-    //if (location.x == 0 && location.y == 0) location.add(new PVector(20, 20));
-    
     //Division test
     if (mass > DIVSIZE && closestThreat > 300) {
       divide();
@@ -124,7 +121,7 @@ class Mover extends Blob{
     float strength = 0;
     
     //AI decisions
-    if (distance < 2*(radius + m.radius)) strength = -100/distance/distance;
+    if (distance < 2*(radius + m.radius)) strength = -10/distance/distance;
     
     //Set importance of target
     pointer.mult(strength);
@@ -148,7 +145,7 @@ class Mover extends Blob{
   
   void slurpP(Plant m) {
     float distance = torusPointer(m.location, location).mag();
-    if (distance <= radius + m.radius) {
+    if (distance <= radius + m.radius && frame > 4) {
       float slurp = 0;
       
       if (m.mass <= mass/25) slurp = m.mass;

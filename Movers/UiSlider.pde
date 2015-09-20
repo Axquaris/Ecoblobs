@@ -20,7 +20,7 @@ public class UiSlider
     this.value = value;
     
     if (max-min < 1)
-      buttonW = height*2;
+      buttonW = height*2.5;
     else
       buttonW = height;
       
@@ -63,14 +63,19 @@ public class UiSlider
     textSize( 20 );
     textAlign( CENTER, CENTER );
     fill(0);
-    text( value, valueX+buttonW/2, y+height/2);
+    if (max-min < 1)
+      text( value.toString(), valueX+buttonW/2, y+height/2);
+    else
+      text( (int)value, valueX+buttonW/2, y+height/2);
   }
   
   //Specific cases
   float getValue() {
     float v = map( valueX, x, x+width-buttonW, min, max );
-    if (max-min < 1)
-      return v;
+    if (min == 0.99)
+      return round(v*10000)/10000;
+    else if (max-min <= 1)
+      return round(v*1000)/1000;
     else
       return round(v);
   }
