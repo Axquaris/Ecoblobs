@@ -7,7 +7,7 @@ class Plant extends Blob{
   Plant(float m, float x, float y) {
     super(m, x, y);
     //Property Vars
-    divCycleLength = (int)(Math. random() * 5 + 10);
+    divCycleLength = (int)(Math.random() * 20 + 10);
     divCycle = divCycleLength;
   }
   
@@ -23,11 +23,11 @@ class Plant extends Blob{
     
     //Movement
     acceleration = grid.getFlow(location);
-    acceleration.setMag(radius*0.8);
+    acceleration.setMag(radius*0.4);
     acceleration.div(mass);
     
     velocity.add(acceleration);
-    velocity.limit(1);
+    velocity.limit(0.8);
     location.add(velocity);
     
     //Torification
@@ -46,9 +46,9 @@ class Plant extends Blob{
     else divCycle++;
     
     //Growth limitation
-    if (mass < DIVSIZEP/2) mass *= growthRate;
+    if (mass <= DIVSIZEP/2) mass *= growthRate;
     else {
-      float g = map(mass, 0, DIVSIZEP*2, 0, growthRate-1);
+      float g = map(mass, DIVSIZEP/2, DIVSIZEP*2, 0, growthRate-1);
       mass *= growthRate - g;
     }
     

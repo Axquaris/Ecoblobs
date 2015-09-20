@@ -1,12 +1,13 @@
 public class UiSlider
 {
   float x, y, width, height;
-  float valueX = 0, value, mult;
+  float valueX, value, mult;
+  float min, max;
   color bar;
   color button;
   float buttonW;
   
-  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) 
+  public UiSlider ( float xx, float yy, float ww, float hh, float min, float max, float value) 
   {
     x = xx; 
     y = yy; 
@@ -14,27 +15,26 @@ public class UiSlider
     height = hh;
     
     this.mult = mult;
+    this.min = min;
+    this.max = max;
     this.value = value;
-    if (mult > 0) {
-      valueX  = map( value, 0, 1, x, x+width-buttonW );
+    
+    if (max-min < 1)
+      buttonW = height*2.5;
+    else
+      buttonW = height;
       
-    }
-    else if (mult == -1){
-      valueX = map( value, .95, 1, x, x+width-buttonW );
-    }
-    else {
-      valueX = map( value, 1, 1.05, x, x+width-buttonW );
-    }
+    valueX  = map( value, min, max, x, x+width-buttonW );
     
     // register it
     Interactive.add( this );
     
     bar = color(128);
     button = color(190);
-    this.buttonW = buttonW;
+    
   }
   
-  // called from manager
+  //Called by manager
   void mouseDragged ( float mx, float my ) { update(mx, my); }
   void mousePressed ( float mx, float my ) { update(mx, my); }
   
@@ -45,14 +45,9 @@ public class UiSlider
     if ( valueX < x ) valueX = x;
     if ( valueX > x+width-buttonW ) valueX = x+width-buttonW;
     
-    if (mult > 0)
-      value = map( valueX, x, x+width-buttonW, 0, 1 );
-    else if(mult == -1)
-      value = getMR();
-    else
-      value = getGR();
+    value = getValue();
   }
-
+  
   public void draw () 
   {
     float f = 0.75; //How much smaller rail bar is
@@ -68,20 +63,20 @@ public class UiSlider
     textSize( 20 );
     textAlign( CENTER, CENTER );
     fill(0);
-    if (mult > 0)
-      text( round(value*mult), valueX+buttonW/2, y+height/2);
-    else if (mult == -1)
-      text( getMR(), valueX+buttonW/2, y+height/2);
+    if (max-min < 1)
+      text( value.toString(), valueX+buttonW/2, y+height/2);
     else
-      text( getGR(), valueX+buttonW/2, y+height/2);
+      text( (int)value, valueX+buttonW/2, y+height/2);
   }
   
   //Specific cases
-  float getMR() {
-    return 0.95+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
-  }
-  
-  float getGR() {
-    return 1+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
+  float getValue() {
+    float v = map( valueX, x, x+width-buttonW, min, max );
+    if (min == 0.99)
+      return round(v*10000)/10000;
+    else if (max-min <= 1)
+      return round(v*1000)/1000;
+    else
+      return round(v);
   }
 }

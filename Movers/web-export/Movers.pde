@@ -3,60 +3,74 @@ import de.bezier.guido.*;
 //Simulation Vars
 public int sHeight;
 public int sWidth;
+final static int DIVSIZEC = 300;
 final static int DIVSIZE = 1000;
 final static int DIVSIZEP = 200;
 final static float NOMFACTOR = 1.2; //if (myMass > itsMass * NOMFACTOR) then its NOMABBLE
 final float BORDERSIZE = sqrt(DIVSIZE/PI);
 final float PBORDERSIZE = sqrt(10000/PI);
-float metabolismRate, growthRate;
+float metabolismRateC, metabolismRate, growthRate;
   
 public GridField grid;
+public ArrayList<Carnivore> carnivores = new ArrayList<Carnivore>();
 public ArrayList<Mover> movers = new ArrayList<Mover>();
 public ArrayList<Plant> plants = new ArrayList<Plant>();
 
 //UI ELEMENTS
 UiButton reset;
+UiSlider carnivoresCtrl;
 UiSlider moversCtrl;
 UiSlider plantsCtrl;
+UiSlider carnivoresMCtrl;
 UiSlider moversMCtrl;
 UiSlider plantsMCtrl;
 Object focus;
 int focusN;
-UiGrapherII graph;
+UiGrapherIII graph;
 UiProperties display;
 
 //Debug Mode
 public boolean debug;
+public int frame;
 
 void setup() {
   frameRate(32);
   size(1000,800);
-  sHeight = 700;
+  sHeight = height-102;
   sWidth = width;
   ellipseMode(RADIUS);
   
+  metabolismRateC = 0.9975;
   metabolismRate = 0.998;
   growthRate = 1.008;
   
-  //Create Blobs
+  //Create Field
   grid = new GridField(50);
-  movers = new ArrayList<Mover>();
-  for (int i = 0; i < 10; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
-  plants = new ArrayList<Plant>();
-  for (int i = 0; i < 15; i++) plants.add(new Plant(random(200, 800),random(width-BORDERSIZE*2)+BORDERSIZE,random(sHeight-BORDERSIZE*2)+BORDERSIZE));
   
   //UI
   Interactive.make( this );
   setupUi();
   
+  //Spawn Blobs
+  spawnBlobs();
+  
   //Debug
   debug = false;
+  frame = 0;
   
-  //noLoop(); //Starts sketch paused for blog
+  noLoop(); //Starts sketch paused for blog
 }
 
 void draw() {
   background(255);
+  
+  //Update Carnivores
+  float cMass = 0;
+  for (int i = 0; i < carnivores.size(); i++) {
+    if(carnivores.get(i).update()) carnivores.remove(i);
+    else cMass += carnivores.get(i).mass;
+  }
+  graph.plotC(cMass);
   
   //Update Movers
   float mMass = 0;
@@ -77,15 +91,14 @@ void draw() {
   if (debug) grid.displayFlow();
   
   //Display blobs
-  for (int i = 0; i < plants.size(); i++) plants.get(i).displayGhosts();
   for (int i = 0; i < plants.size(); i++) plants.get(i).display();
-  for (int i = 0; i < movers.size(); i++) movers.get(i).displayGhosts();
   for (int i = 0; i < movers.size(); i++) movers.get(i).display();
+  for (int i = 0; i < carnivores.size(); i++) carnivores.get(i).display();
 
   //GUI
   strokeWeight(1);
   fill(57, 103, 144);
-  rect(0, sHeight, 650, 100);
+  rect(0, sHeight, 650, 150);
   
   if (focusN == -1)  graph.render();
   else display.render(focus, focusN);
@@ -96,6 +109,7 @@ void draw() {
     textSize( 40 );
     text("FPS: "+(int)frameRate, 10, 10);
   }
+  frame++;
 }
 
 void keyPressed() {
@@ -104,13 +118,28 @@ void keyPressed() {
   }
 }
 
+void toggleDebug() {
+  debug = !debug;
+}
+
 void mousePressed() {
+  for (int i = 0; i < carnivores.size(); i++) carnivores.get(i).unFocus();
   for (int i = 0; i < movers.size(); i++) movers.get(i).unFocus();
   for (int i = 0; i < plants.size(); i++) plants.get(i).unFocus();
   
+  for (int i = carnivores.size()-1; i >=0 ; i--) {
+    float distance = sqrt(pow(carnivores.get(i).location.x-mouseX, 2)
+                         +pow(carnivores.get(i).location.y-mouseY, 2));
+    if ( distance <= carnivores.get(i).radius ) {
+      carnivores.get(i).focus();
+      focus = carnivores.get(i);
+      focusN = i;
+      return;
+    }
+  }
   for (int i = movers.size()-1; i >=0 ; i--) {
     float distance = sqrt(pow(movers.get(i).location.x-mouseX, 2)
-                        +pow(movers.get(i).location.y-mouseY, 2));
+                         +pow(movers.get(i).location.y-mouseY, 2));
     if ( distance <= movers.get(i).radius ) {
       movers.get(i).focus();
       focus = movers.get(i);
@@ -120,7 +149,7 @@ void mousePressed() {
   }
   for (int i = plants.size()-1; i >=0 ; i--) {
     float distance = sqrt(pow(plants.get(i).location.x-mouseX, 2)
-                        +pow(plants.get(i).location.y-mouseY, 2));
+                         +pow(plants.get(i).location.y-mouseY, 2));
     if ( distance <= plants.get(i).radius ) {
       plants.get(i).focus();
       focus = plants.get(i);
@@ -133,26 +162,320 @@ void mousePressed() {
 }
 
 void setupUi() {
-  reset = new UiButton ( 10, sHeight+10, 120, 80, "RESET");
-  moversCtrl = new UiSlider( 150, sHeight+10, 240, 35, 10/100, 100, 35 );
+  reset = new UiButton ( 15, sHeight+10, 120, 82, "RESET");
+  
+  carnivoresCtrl = new UiSlider( 150, sHeight+3, 240, 30, 0, 10, 3);
+  carnivoresCtrl.button = color(145, 20, 5);
+  carnivoresMCtrl = new UiSlider( 400, sHeight+3, 240, 30, 0.9900, 1, 0.9975);
+  carnivoresMCtrl.button = color(145, 20, 5);
+  
+  moversCtrl = new UiSlider( 150, sHeight+36, 240, 30, 0, 100, 10);
   moversCtrl.button = color(75);
-  plantsCtrl = new UiSlider( 150, sHeight+55, 240, 35, 15/20, 20, 35 );
-  plantsCtrl.button = color(93, 156, 51, 250);
-  
-  
-  moversMCtrl = new UiSlider( 400, sHeight+10, 240, 35, 0.998, -1 , 70);
+  moversMCtrl = new UiSlider( 400, sHeight+36, 240, 30, 0.9500, 1, 0.998);
   moversMCtrl.button = color(75);
-  moversMCtrl.buttonW = moversMCtrl.height*2;
-  plantsMCtrl = new UiSlider( 400, sHeight+55, 240, 35, 1.008, -2, 70 );
+  
+  plantsCtrl = new UiSlider( 150, sHeight+69, 240, 30, 0, 50, 20);
+  plantsCtrl.button = color(93, 156, 51, 250);
+  plantsMCtrl = new UiSlider( 400, sHeight+69, 240, 30, 1.0, 1.050, 1.016);
   plantsMCtrl.button = color(93, 156, 51, 250);
-  plantsMCtrl.buttonW = plantsMCtrl.height*2;
   
   focus = null;
   focusN = -1;
-  graph = new UiGrapherII(650, height-150, 350, 150, "Blob Masses");
+  graph = new UiGrapherIII(650, height-150, 350, 150, "Blob Masses");
   display = new UiProperties(650, height-150, 350, 150);
 }
 
+void spawnBlobs() {
+  carnivores = new ArrayList<Carnivore>();
+  for (int i = 0; i < carnivoresCtrl.getValue(); i++) carnivores.add(
+            new Carnivore(DIVSIZE*0.8,random(sWidth),random(sHeight))
+            );
+  movers = new ArrayList<Mover>();
+  for (int i = 0; i < moversCtrl.getValue(); i++) movers.add(
+            new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight))
+            );
+  plants = new ArrayList<Plant>();
+  for (int i = 0; i < plantsCtrl.getValue(); i++) plants.add(
+            new Plant(random(DIVSIZEP, DIVSIZEP*4),random(sWidth),random(sHeight))
+            );
+}
+
+void updateVars() {
+  metabolismRateC = carnivoresMCtrl.getValue();
+  metabolismRate = moversMCtrl.getValue();
+  growthRate = plantsMCtrl.getValue();
+  graph.reset();
+  grid.newFlowField();
+  
+  frame = 0;
+}
+class Blob {
+  
+  //Property Vars
+  PVector location;
+  PVector velocity;
+  PVector acceleration;
+  float radius;
+  float mass;
+  
+  //Torrific Vars
+  int ghostX;
+  int ghostY;
+  
+  //GUI Vars
+  int sWeight;
+  
+  Blob(float m, float x, float y) {
+    //Property Vars
+    mass = m;
+    radius = sqrt(m/PI);
+    location = new PVector(x, y);
+    velocity = new PVector();
+    acceleration = new PVector();
+    
+    //Torrific Vars
+    ghostX = 0;
+    ghostY = 0;
+    
+    //GUI Var
+    sWeight = 2;
+  }
+  
+  //Find the shortest path between 2 objects on torus
+  PVector torusPointer(PVector p1, PVector p2) {
+    float x, y;
+    float a, b;
+    
+    //Determine x
+    if (p1.x > p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x+sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
+    }
+    else if (p1.x < p2.x) {
+      a = p1.x - p2.x;
+      b = p1.x - (p2.x-sWidth);
+      if (abs(a) <= abs(b)) x = a;
+      else x = b;
+    }
+    else x = 0;
+    
+    //Determine y
+    if (p1.y > p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y+sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
+    }
+    else if (p1.y < p2.y) {
+      a = p1.y - p2.y;
+      b = p1.y - (p2.y-sHeight);
+      if (abs(a) <= abs(b)) y = a;
+      else y = b;
+    }
+    else y = 0;
+    
+    return new PVector(x, y);
+  }
+  
+  //Display toriod ghost if applicable
+  void displayGhosts() {
+    if (ghostX != 0 && ghostY != 0) {
+      displayGhost(ghostX*sWidth, 0);
+      displayGhost(0, ghostY * sHeight);
+      displayGhost(ghostX*sWidth, ghostY * sHeight);
+    }
+    else if (ghostX != 0) displayGhost(ghostX*sWidth, 0);
+    else if (ghostY != 0) displayGhost(0, ghostY * sHeight);
+  }
+  
+  //Subfunction for displayGhost
+  void displayGhost(int xShift, int yShift) {}
+  
+  //Makes sketch even more torrific than before :D
+  void torify() {
+    if (location.x <= BORDERSIZE) {
+      ghostX = 1;
+      if (location.x <= 0) {
+        location.x += sWidth;
+        ghostX = -1;
+      }
+    }
+    else if (location.x >= sWidth - BORDERSIZE) {
+      ghostX = -1;
+      if (location.x >= sWidth) {
+        location.x -= sWidth;
+        ghostX = 1;
+      }
+    }
+    else ghostX = 0;
+    
+    if (location.y <= BORDERSIZE) {
+      ghostY = 1;
+      if (location.y <= 0) {
+        location.y += sHeight;
+        ghostY = -1;
+      }
+    }
+    else if (location.y >= sHeight - BORDERSIZE) {
+      ghostY = -1;
+      if (location.y >= sHeight) {
+        location.y -= sHeight;
+        ghostY = 1;
+      }
+    }
+    else ghostY = 0;
+  }
+}
+class Carnivore extends Mover{
+  
+  Carnivore (float m, float x, float y) {
+    super(m, x, y);
+  }
+  
+  Carnivore (float m, float x, float y, PVector velocity) {
+    super(m, x, y, velocity);
+  }
+  
+  boolean update() {
+    //Reset vars
+    target.mult(0);
+    tDivisor = 0;
+    acceleration.mult(0);
+
+    if (mass < 5) return true; //Self destruct
+    
+    closestThreat = 1000;
+    
+    for (int j = 0; j < carnivores.size(); j++) {
+      if (!this.equals(carnivores.get(j))) {
+        considerC(carnivores.get(j));
+      }
+    }
+    for (int j = 0; j < movers.size(); j++) {
+      if (!this.equals(movers.get(j))) {
+        consider(movers.get(j));
+        slurp(movers.get(j));
+      }
+    }
+    
+    //Movement Calculations
+    target.div(tDivisor);
+    acceleration = target;
+    acceleration.setMag((mass*200)/DIVSIZE*1.25);
+    acceleration.div(mass);
+    
+    velocity.add(acceleration);
+    velocity.limit((1+mass/DIVSIZE)*1.25);
+    noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
+    location.add(velocity);
+    
+    //Torification :)
+    torify();
+    
+    //Division test
+    if (mass > DIVSIZE && closestThreat > 100) {
+      divide();
+    }
+    
+    //Consider Metabolism
+    mass *= metabolismRateC;
+    radius = sqrt(mass/PI);
+    
+    return false;
+  }
+
+  void display() {
+    radius = sqrt(mass/PI);
+    
+    stroke(20, 2, 0);
+    strokeWeight(sWeight);
+    fill(112+30 - 10*(mass/DIVSIZE), 30+30 - 10*(mass/DIVSIZE), 21+30 - 10*(mass/DIVSIZE), 200);
+    
+    displayGhosts();//Function from Blob class
+    ellipse(location.x, location.y, radius, radius);
+    line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
+  }
+  
+  //Subfunction for displayGhosts in Blob class
+  void displayGhost(int xShift, int yShift) {
+    ellipse(location.x+xShift, location.y+yShift, radius, radius);
+    line(location.x+xShift, location.y+yShift, location.x+xShift+noseEnd.x, location.y+yShift+noseEnd.y);
+  }
+  
+  void considerC(Carnivore m) {
+    PVector pointer = torusPointer(m.location, location);
+    float distance = pointer.mag();
+    distance = constrain(distance, 5.0, 3000.0);
+    float strength = 0;
+    
+    //AI decisions
+    if (distance < 2*(radius + m.radius)) strength = -10/distance/distance;
+    
+    //Set importance of target
+    pointer.mult(strength);
+    //Add new desired location
+    if (strength != 0) addTarget(pointer, strength);
+  }
+  
+  void consider(Mover m) {
+    PVector pointer = torusPointer(m.location, location);
+    float distance = pointer.mag();
+    distance = constrain(distance, 5.0, 3000.0);
+    float strength = 0;
+    
+    //AI decisions
+    if (mass <= DIVSIZE) {
+      strength = m.mass*10000/pow(distance, 4);
+      if (distance < closestThreat) closestThreat = distance;
+    } 
+    else {
+      strength = -m.mass/distance/distance;
+      if (distance < closestThreat) closestThreat = distance;
+    }
+    
+    //Set importance of target
+    pointer.mult(strength);
+    //Add new desired location
+    if (strength != 0) addTarget(pointer, strength);
+  }
+  
+  void slurp(Mover m) {
+    float distance = torusPointer(m.location, location).mag();
+    if (distance <= radius + m.radius) {
+      float slurp = 0;
+      
+      if (m.mass <= mass/25) slurp = m.mass;
+      else slurp = mass/25;
+      if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
+      
+      m.mass -= slurp;
+      mass += slurp*0.8;
+      m.radius = sqrt(m.mass/PI);
+    }
+  }
+  
+  void divide() {
+    PVector split = new PVector(velocity.y, -velocity.x);
+    split.mult(1);
+    
+    carnivores.add(new Carnivore(mass*0.5, location.x, location.y, PVector.add(velocity, split)));
+    
+    split.mult(-1);
+    velocity.add(split);
+    mass *= 0.5;
+    radius = sqrt(mass/PI);
+  }
+  
+  void focus() {
+    sWeight = 6;
+  }
+  
+  void unFocus() {
+    sWeight = 2;
+  }
+}
 //Code inspired by:
 // Daniel Shiffman's The Nature of Code @ http://natureofcode.com
 
@@ -209,57 +532,25 @@ class GridField {
 
 
 }
-
-
-
-
-
-class Mover {
+class Mover extends Blob{
   //Property Vars
-  PVector location;
-  PVector velocity, noseEnd;
-  PVector acceleration;
-  float radius;
-  float mass;
+  PVector noseEnd;
   
   //AI Vars
   PVector target;
   float tDivisor;
   float closestThreat;
   
-  //Torrific Vars
-  int ghostX;
-    // 0 = no change
-    // 1 = ghost on right
-    // -1 = ghost on left
-  int ghostY;
-    // 0 = no change
-    // 1 = ghost on bottom
-    // -1 = ghost on top
-    
-  //GUI Vars
-  int sWeight;
-  
   Mover(float m, float x, float y) {
+    super(m, x, y);
+    
     //Property Vars
-    location = new PVector(x, y);
-    velocity = new PVector();
     noseEnd = new PVector();
-    acceleration = new PVector();
-    mass = m;
-    radius = sqrt(m/PI);
     
     //AI Vars
     target = new PVector();
     tDivisor = 0;
     closestThreat = 1000;
-    
-    //Torrific Vars
-    ghostX = 0;
-    ghostY = 0;
-    
-    //GUI Vars
-    sWeight = 2;
   }
   
   Mover(float m, float x, float y, PVector velocity) {
@@ -282,21 +573,20 @@ class Mover {
     
     closestThreat = 1000;
     
+    for (int j = 0; j < carnivores.size(); j++) {
+      if (!this.equals(carnivores.get(j))) {
+        consider(carnivores.get(j));
+      }
+    }
     for (int j = 0; j < movers.size(); j++) {
       if (!this.equals(movers.get(j))) {
         consider(movers.get(j));
-        slurp(movers.get(j));
       }
     }
     for (int j = 0; j < plants.size(); j++) {
       if (mass <= DIVSIZE) considerP(plants.get(j));
       slurpP(plants.get(j));
     }
-    
-    //Current Calculations
-    //PVector current = grid.getFlow(location);
-    //current.setMag(radius*0.4);
-    //current.div(mass);
     
     //Movement Calculations
     target.div(tDivisor);
@@ -305,7 +595,6 @@ class Mover {
     acceleration.div(mass);
     
     velocity.add(acceleration);
-    //velocity.add(current);
     velocity.limit(1+mass/DIVSIZE);
     noseEnd = new PVector(velocity.x*radius, velocity.y*radius);
     location.add(velocity);
@@ -313,11 +602,8 @@ class Mover {
     //Torification :)
     torify();
     
-    //Quick Fix
-    //if (location.x == 0 && location.y == 0) location.add(new PVector(20, 20));
-    
     //Division test
-    if (mass > DIVSIZE && closestThreat > 100) {
+    if (mass > DIVSIZE && closestThreat > 300) {
       divide();
     }
     
@@ -330,40 +616,31 @@ class Mover {
 
   void display() {
     radius = sqrt(mass/PI);
+    
     stroke(0);
     strokeWeight(sWeight);
     fill(150 - 100*(mass/DIVSIZE), 200);
+    
+    displayGhosts();//Function from Blob class
     ellipse(location.x, location.y, radius, radius);
     line(location.x, location.y, location.x+noseEnd.x, location.y+noseEnd.y);
-    line(location.x, location.y, location.x+target.x, location.y+target.y);
   }
   
-  void consider(Mover m) {
+  //Subfunction for displayGhosts in Blob class
+  void displayGhost(int xShift, int yShift) {
+    ellipse(location.x+xShift, location.y+yShift, radius, radius);
+    line(location.x+xShift, location.y+yShift, location.x+xShift+noseEnd.x, location.y+yShift+noseEnd.y);
+  }
+  
+  void considerC(Carnivore m) {
     PVector pointer = torusPointer(m.location, location);
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
-    float strength;
+    float strength = 0;
     
     //AI decisions
-    if (mass <= DIVSIZE) {
-      if (mass > m.mass * NOMFACTOR) strength = m.mass/pow(distance, 2);
-      else if (m.mass > mass * NOMFACTOR * .95) {
-        strength = -m.mass* 200/distance/distance/distance;
-        if (m.mass > mass * 0.45 && distance < closestThreat) closestThreat = distance;
-      }
-      else if (distance < 3*(radius + m.radius)) strength = -10000/distance/distance/distance;
-      else strength = 0;
-      
-      if (distance < closestThreat) closestThreat = distance;
-    }
-    else {
-      if (m.mass > mass * 0.45) {
-        strength = -m.mass/distance/distance;
-        if (distance < closestThreat) closestThreat = distance;
-      }
-      else if (distance < 3*(radius + m.radius) && distance >= closestThreat) strength = -10000/distance/distance/distance;
-      else strength = 0;
-    }
+    strength = -10000*m.mass/distance;
+    if (distance < closestThreat) closestThreat = distance;
     
     //Set importance of target
     pointer.mult(strength);
@@ -371,19 +648,19 @@ class Mover {
     if (strength != 0) addTarget(pointer, strength);
   }
   
-  void slurp(Mover m) {
-    float distance = torusPointer(m.location, location).mag();
-    if (distance <= radius + m.radius && mass > m.mass * NOMFACTOR) {
-      float slurp = 0;
-      
-      if (m.mass <= mass/25) slurp = m.mass;
-      else slurp = mass/25;
-      if (mass + slurp > DIVSIZE*1.5) slurp = DIVSIZE*1.5 - mass + 1;
-      
-      m.mass -= slurp;
-      mass += slurp;
-      m.radius = sqrt(m.mass/PI);
-    }
+  void consider(Mover m) {
+    PVector pointer = torusPointer(m.location, location);
+    float distance = pointer.mag();
+    distance = constrain(distance, 5.0, 3000.0);
+    float strength = 0;
+    
+    //AI decisions
+    if (distance < 2*(radius + m.radius)) strength = -10/distance/distance;
+    
+    //Set importance of target
+    pointer.mult(strength);
+    //Add new desired location
+    if (strength != 0) addTarget(pointer, strength);
   }
   
   void considerP(Plant m) {
@@ -391,8 +668,8 @@ class Mover {
     float distance = pointer.mag();
     distance = constrain(distance, 5.0, 3000.0);
     
-    //AI decision
-    float strength = m.mass/pow(distance, 2)/2;
+    //AI decisions
+    float strength = m.mass/pow(distance, 3);
     
     //Set importance of target
     pointer.mult(strength);
@@ -402,7 +679,7 @@ class Mover {
   
   void slurpP(Plant m) {
     float distance = torusPointer(m.location, location).mag();
-    if (distance <= radius + m.radius) {
+    if (distance <= radius + m.radius && frame > 4) {
       float slurp = 0;
       
       if (m.mass <= mass/25) slurp = m.mass;
@@ -427,101 +704,6 @@ class Mover {
     radius = sqrt(mass/PI);
   }
   
-  //Find the shortest path between 2 objects on torus
-  PVector torusPointer(PVector p1, PVector p2) {
-    float x, y;
-    float a, b;
-    
-    //Determine x
-    if (p1.x > p2.x) {
-      a = p1.x - p2.x;
-      b = p1.x - (p2.x+sWidth);
-      if (abs(a) <= abs(b)) x = a;
-      else x = b;
-    }
-    else if (p1.x < p2.x) {
-      a = p1.x - p2.x;
-      b = p1.x - (p2.x-sWidth);
-      if (abs(a) <= abs(b)) x = a;
-      else x = b;
-    }
-    else x = 0;
-    
-    //Determine y
-    if (p1.y > p2.y) {
-      a = p1.y - p2.y;
-      b = p1.y - (p2.y+sHeight);
-      if (abs(a) <= abs(b)) y = a;
-      else y = b;
-    }
-    else if (p1.y < p2.y) {
-      a = p1.y - p2.y;
-      b = p1.y - (p2.y-sHeight);
-      if (abs(a) <= abs(b)) y = a;
-      else y = b;
-    }
-    else y = 0;
-    
-    return new PVector(x, y);
-  }
-  
-  //Display toriod ghost if applicable
-  void displayGhosts() {
-    radius = sqrt(mass/PI);
-    stroke(0);
-    strokeWeight(sWeight);
-    fill(150 - 100*(mass/DIVSIZE), 200);
-    
-    if (ghostX != 0 && ghostY != 0) {
-      displayGhost(ghostX*sWidth, 0);
-      displayGhost(0, ghostY * sHeight);
-      displayGhost(ghostX*sWidth, ghostY * sHeight);
-    }
-    else if (ghostX != 0) displayGhost(ghostX*sWidth, 0);
-    else if (ghostY != 0) displayGhost(0, ghostY * sHeight);
-  }
-  
-  //Subfunction for displayGhost
-  void displayGhost(int xShift, int yShift) {
-    ellipse(location.x+xShift, location.y+yShift, radius, radius);
-    line(location.x+xShift, location.y+yShift, location.x+xShift+noseEnd.x, location.y+yShift+noseEnd.y);
-  }
-  
-  //Makes sketch even more torrific than before :D
-  void torify() {
-    if (location.x <= BORDERSIZE) {
-      ghostX = 1;
-      if (location.x <= 0) {
-        location.x += sWidth;
-        ghostX = -1;
-      }
-    }
-    else if (location.x >= sWidth - BORDERSIZE) {
-      ghostX = -1;
-      if (location.x >= sWidth) {
-        location.x -= sWidth;
-        ghostX = 1;
-      }
-    }
-    else ghostX = 0;
-    
-    if (location.y <= BORDERSIZE) {
-      ghostY = 1;
-      if (location.y <= 0) {
-        location.y += sHeight;
-        ghostY = -1;
-      }
-    }
-    else if (location.y >= sHeight - BORDERSIZE) {
-      ghostY = -1;
-      if (location.y >= sHeight) {
-        location.y -= sHeight;
-        ghostY = 1;
-      }
-    }
-    else ghostY = 0;
-  }
-  
   void focus() {
     sWeight = 6;
   }
@@ -530,41 +712,17 @@ class Mover {
     sWeight = 2;
   }
 }
-
-
-class Plant {
+class Plant extends Blob{
   
   //Property Vars
-  PVector location;
-  PVector velocity;
-  PVector acceleration;
-  float radius;
-  float mass;
   int divCycle;
   int divCycleLength;
   
-  //Torrific Vars
-  int ghostX;
-  int ghostY;
-  
-  //GUI Vars
-  int sWeight;
-  
   Plant(float m, float x, float y) {
+    super(m, x, y);
     //Property Vars
-    mass = m;
-    radius = sqrt(m/PI);
-    location = new PVector(x, y);
-    velocity = new PVector();
-    acceleration = new PVector();
-    divCycleLength = (int )(Math. random() * 5 + 10);
+    divCycleLength = (int)(Math.random() * 20 + 10);
     divCycle = divCycleLength;
-    
-    //Torrific Vars
-    ghostX = 0;
-    ghostY = 0;
-    
-    sWeight = 2;
   }
   
   Plant(float m, float x, float y, PVector velocity) {
@@ -579,11 +737,11 @@ class Plant {
     
     //Movement
     acceleration = grid.getFlow(location);
-    acceleration.setMag(radius*0.8);
+    acceleration.setMag(radius*0.4);
     acceleration.div(mass);
     
     velocity.add(acceleration);
-    velocity.limit(1);
+    velocity.limit(0.8);
     location.add(velocity);
     
     //Torification
@@ -602,14 +760,30 @@ class Plant {
     else divCycle++;
     
     //Growth limitation
-    if (mass < DIVSIZEP/2) mass *= growthRate;
+    if (mass <= DIVSIZEP/2) mass *= growthRate;
     else {
-      float g = map(mass, 0, DIVSIZEP*2, 0, growthRate-1);
+      float g = map(mass, DIVSIZEP/2, DIVSIZEP*2, 0, growthRate-1);
       mass *= growthRate - g;
     }
     
     radius = sqrt(mass/PI);
     return false;
+  }
+  
+  void display() {
+    radius = sqrt(mass/PI);
+    
+    stroke(43, 71, 20);
+    strokeWeight(sWeight);
+    fill(93, 156, 51, 240);
+    
+    displayGhosts(); //Function from Blob class
+    ellipse(location.x, location.y, radius, radius);
+  }
+  
+  //Subfunction for displayGhosts from Blob class
+  void displayGhost(int xShift, int yShift) {
+    ellipse(location.x+xShift, location.y+yShift, radius, radius);
   }
   
   void divide() {
@@ -623,107 +797,7 @@ class Plant {
     mass *= 0.5;
     radius = sqrt(mass/PI);
   }
-
-  void display() {
-    radius = sqrt(mass/PI);
-    stroke(43, 71, 20);
-    strokeWeight(sWeight);
-    fill(93, 156, 51, 240);
-    ellipse(location.x, location.y, radius, radius);
-  }
   
-  //Display toriod ghost if applicable
-  void displayGhosts() {
-    radius = sqrt(mass/PI);
-    stroke(43, 71, 20);
-    strokeWeight(sWeight);
-    fill(93, 156, 51, 240);
-    
-    if (ghostX != 0 && ghostY != 0) {
-      displayGhost(ghostX*sWidth, 0);
-      displayGhost(0, ghostY * sHeight);
-      displayGhost(ghostX*sWidth, ghostY * sHeight);
-    }
-    else if (ghostX != 0) displayGhost(ghostX*sWidth, 0);
-    else if (ghostY != 0) displayGhost(0, ghostY * sHeight);
-  }
-  
-  //Subfunction for displayGhost
-  void displayGhost(int xShift, int yShift) {
-    ellipse(location.x+xShift, location.y+yShift, radius, radius);
-  }
-  
-  PVector torusPointer(PVector p1, PVector p2) {
-    float x, y;
-    float a, b;
-    
-    //Determine x
-    if (p1.x > p2.x) {
-      a = p1.x - p2.x;
-      b = p1.x - (p2.x+sWidth);
-      if (abs(a) <= abs(b)) x = a;
-      else x = b;
-    }
-    else if (p1.x < p2.x) {
-      a = p1.x - p2.x;
-      b = p1.x - (p2.x-sWidth);
-      if (abs(a) <= abs(b)) x = a;
-      else x = b;
-    }
-    else x = 0;
-    
-    //Determine y
-    if (p1.y > p2.y) {
-      a = p1.y - p2.y;
-      b = p1.y - (p2.y+sHeight);
-      if (abs(a) <= abs(b)) y = a;
-      else y = b;
-    }
-    else if (p1.y < p2.y) {
-      a = p1.y - p2.y;
-      b = p1.y - (p2.y-sHeight);
-      if (abs(a) <= abs(b)) y = a;
-      else y = b;
-    }
-    else y = 0;
-    
-    return new PVector(x, y);
-  }
-  
-  //Makes sketch even more torrific than before :D
-  void torify() {
-    if (location.x <= PBORDERSIZE) {
-      ghostX = 1;
-      if (location.x <= 0) {
-        location.x += sWidth;
-        ghostX = -1;
-      }
-    }
-    else if (location.x >= sWidth - PBORDERSIZE) {
-      ghostX = -1;
-      if (location.x >= sWidth) {
-        location.x -= sWidth;
-        ghostX = 1;
-      }
-    }
-    else ghostX = 0;
-    
-    if (location.y <= PBORDERSIZE) {
-      ghostY = 1;
-      if (location.y <= 0) {
-        location.y += sHeight;
-        ghostY = -1;
-      }
-    }
-    else if (location.y >= sHeight - PBORDERSIZE) {
-      ghostY = -1;
-      if (location.y >= sHeight) {
-        location.y -= sHeight;
-        ghostY = 1;
-      }
-    }
-    else ghostY = 0;
-  }
   void focus() {
     sWeight = 8;
   }
@@ -745,14 +819,8 @@ public class UiButton {
   
   public void mousePressed ( float mx, float my ) {
     //Resets simulation when button is pressed
-    movers = new ArrayList<Mover>();
-    for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
-    plants = new ArrayList<Plant>();
-    for (int i = 0; i < plantsCtrl.value*20; i++) plants.add(new Plant(random(200, 800),random(sWidth),random(sHeight)));
-    metabolismRate = moversMCtrl.value;
-    growthRate = plantsMCtrl.value;
-    graph.reset();
-    grid.newFlowField();
+    spawnBlobs();
+    updateVars();
     
     pressed = true;
   }
@@ -772,12 +840,12 @@ public class UiButton {
     else text( s, x+width/2, y+height/2);
   }
 }
-public class UiGrapherII{
+public class UiGrapherIII{
   int x, y, w, h;
   String title;
   
-  float[] pointsA, pointsB;
-  int pNA, pNB; //Number of points ready for plotting
+  float[] pointsA, pointsB, pointsC;
+  int pNA, pNB, pNC; //Number of points ready for plotting
   float max, min;
   
   //Layout Vars
@@ -785,7 +853,7 @@ public class UiGrapherII{
   int titleEdge = 30;
   int numberEdge = 30;
   
-  UiGrapherII(int x, int y, int w, int h, String title) {
+  UiGrapherIII(int x, int y, int w, int h, String title) {
     this.x = x;
     this.y = y;
     this.w = w;
@@ -796,6 +864,8 @@ public class UiGrapherII{
     pNA = 0;
     pointsB = new float[w - edge - numberEdge];
     pNB = 0;
+    pointsC = new float[w - edge - numberEdge];
+    pNC = 0;
     max = 0;
     min = 0;
   }
@@ -826,6 +896,19 @@ public class UiGrapherII{
     }
   }
   
+  void plotC (float p){
+    for (int i = pointsC.length-1; i > 0; i--) {
+      pointsC[i] = pointsC[i-1];
+    }
+    pointsC[0] = p;
+    if (p > max) max = p;
+    if (p < min) min = p;
+    
+    if (pNB < pointsC.length){
+      pNC++;
+    }
+  }
+  
   void render(){
     fill(173, 117, 77);
     rect(x, y, w, h);
@@ -838,6 +921,10 @@ public class UiGrapherII{
     stroke(66, 110, 36);
     for (int i = 0; i < pNB-1; i++) {
       line(x+numberEdge+i, getPosB(i), x+numberEdge+(i+1), getPosB(i+1));
+    }
+    stroke(145, 15, 0);
+    for (int i = 0; i < pNC-1; i++) {
+      line(x+numberEdge+i, getPosC(i), x+numberEdge+(i+1), getPosC(i+1));
     }
     stroke(0);
     strokeWeight(1);
@@ -855,15 +942,23 @@ public class UiGrapherII{
   }
     
   int getPosA(int i) {
-      float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
-      n *= -1;
-      n += x + h - edge;
-      
-      return round(n);
+    float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
+    n *= -1;
+    n += x + h - edge;
+    
+    return round(n);
   }
     
   int getPosB(int i) {
     float n = map(pointsB[i], min, max, 0, h-edge-titleEdge);
+    n *= -1;
+    n += x + h - edge;
+    
+    return round(n);
+  }
+  
+  int getPosC(int i) {
+    float n = map(pointsC[i], min, max, 0, h-edge-titleEdge);
     n *= -1;
     n += x + h - edge;
     
@@ -875,6 +970,8 @@ public class UiGrapherII{
     pNA = 0;
     pointsB = new float[w - edge - numberEdge];
     pNB = 0;
+    pointsC = new float[w - edge - numberEdge];
+    pNC = 0;
     max = 0;
     min = 0; 
   }
@@ -903,58 +1000,54 @@ public class UiProperties{
     stroke(0);
     strokeWeight(1);
     textAlign( LEFT, CENTER );
-    try {
+    textSize( titleS );
+    
+    //Carnivore
+    if (obj instanceof Carnivore) {
+      Carnivore blob = (Carnivore)obj;
+      text("Carnivore #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
+    }
+    
     //Mover
-      if (obj instanceof Mover) {
-        Mover blob = (Mover)obj;
-        
-        textSize( titleS );
-        text("Mover #"+num, x+edge, y+titleEdge*3/4);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
-      
-      //Plant
-      else if (obj instanceof Plant) {
-        Plant blob = (Plant)obj;
-        
-        textSize( titleS );
-        text("Plant #"+num, x+edge, y+titleEdge/2);
-        
-        textSize( infoS );
-        text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
-          x+edge, y+titleEdge+titleS);
-        text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*2);
-        text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
-          x+edge, y+titleEdge+titleS*3);
-        text("Mass: "+(int)blob.mass,
-          x+edge, y+titleEdge+titleS*4);
-        text("Radius: "+(int)blob.radius,
-          x+edge, y+titleEdge+titleS*5);
-      }
-    } catch(Exception e){}
+    else if (obj instanceof Mover) {
+      Mover blob = (Mover)obj;
+      text("Herbivore #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
+    }
+    
+    //Plant
+    else if (obj instanceof Plant) {
+      Plant blob = (Plant)obj;
+      text("Plant #"+num, x+edge, y+titleEdge*.75);
+      displayInfo(blob);
+    }
+  }
+  
+  void displayInfo(Blob blob) {
+    textSize( infoS );
+    text("Location: "+(int)blob.location.x+", "+(int)blob.location.y,
+      x+edge, y+titleEdge+titleS);
+    text("Velocity: "+(double)Math.round(blob.velocity.x * 1000) / 1000+", "+(double)Math.round(blob.velocity.y * 1000) / 1000,
+      x+edge, y+titleEdge+titleS*2);
+    text("Acceleration: "+(double)Math.round(blob.acceleration.x * 1000) / 1000+", "+(double)Math.round(blob.acceleration.y * 1000) / 1000,
+      x+edge, y+titleEdge+titleS*3);
+    text("Mass: "+(int)blob.mass,
+      x+edge, y+titleEdge+titleS*4);
+    text("Radius: "+(int)blob.radius,
+      x+edge, y+titleEdge+titleS*5);
   }
 }
 public class UiSlider
 {
   float x, y, width, height;
-  float valueX = 0, value, mult;
+  float valueX, value, mult;
+  float min, max;
   color bar;
   color button;
   float buttonW;
   
-  public UiSlider ( float xx, float yy, float ww, float hh, float value, float mult, float buttonW) 
+  public UiSlider ( float xx, float yy, float ww, float hh, float min, float max, float value) 
   {
     x = xx; 
     y = yy; 
@@ -962,27 +1055,26 @@ public class UiSlider
     height = hh;
     
     this.mult = mult;
+    this.min = min;
+    this.max = max;
     this.value = value;
-    if (mult > 0) {
-      valueX  = map( value, 0, 1, x, x+width-buttonW );
+    
+    if (max-min < 1)
+      buttonW = height*2.5;
+    else
+      buttonW = height;
       
-    }
-    else if (mult == -1){
-      valueX = map( value, .95, 1, x, x+width-buttonW );
-    }
-    else {
-      valueX = map( value, 1, 1.05, x, x+width-buttonW );
-    }
+    valueX  = map( value, min, max, x, x+width-buttonW );
     
     // register it
     Interactive.add( this );
     
     bar = color(128);
     button = color(190);
-    this.buttonW = buttonW;
+    
   }
   
-  // called from manager
+  //Called by manager
   void mouseDragged ( float mx, float my ) { update(mx, my); }
   void mousePressed ( float mx, float my ) { update(mx, my); }
   
@@ -993,14 +1085,9 @@ public class UiSlider
     if ( valueX < x ) valueX = x;
     if ( valueX > x+width-buttonW ) valueX = x+width-buttonW;
     
-    if (mult > 0)
-      value = map( valueX, x, x+width-buttonW, 0, 1 );
-    else if(mult == -1)
-      value = getMR();
-    else
-      value = getGR();
+    value = getValue();
   }
-
+  
   public void draw () 
   {
     float f = 0.75; //How much smaller rail bar is
@@ -1016,21 +1103,21 @@ public class UiSlider
     textSize( 20 );
     textAlign( CENTER, CENTER );
     fill(0);
-    if (mult > 0)
-      text( round(value*mult), valueX+buttonW/2, y+height/2);
-    else if (mult == -1)
-      text( getMR(), valueX+buttonW/2, y+height/2);
+    if (max-min < 1)
+      text( value.toString(), valueX+buttonW/2, y+height/2);
     else
-      text( getGR(), valueX+buttonW/2, y+height/2);
+      text( (int)value, valueX+buttonW/2, y+height/2);
   }
   
   //Specific cases
-  float getMR() {
-    return 0.95+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
-  }
-  
-  float getGR() {
-    return 1+round(map( valueX, x, x+width-buttonW, 0, 50 )) * .001;
+  float getValue() {
+    float v = map( valueX, x, x+width-buttonW, min, max );
+    if (min == 0.99)
+      return round(v*10000)/10000;
+    else if (max-min <= 1)
+      return round(v*1000)/1000;
+    else
+      return round(v);
   }
 }
 

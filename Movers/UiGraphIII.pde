@@ -1,9 +1,9 @@
-public class UiGrapherII{
+public class UiGrapherIII{
   int x, y, w, h;
   String title;
   
-  float[] pointsA, pointsB;
-  int pNA, pNB; //Number of points ready for plotting
+  float[] pointsA, pointsB, pointsC;
+  int pNA, pNB, pNC; //Number of points ready for plotting
   float max, min;
   
   //Layout Vars
@@ -11,7 +11,7 @@ public class UiGrapherII{
   int titleEdge = 30;
   int numberEdge = 30;
   
-  UiGrapherII(int x, int y, int w, int h, String title) {
+  UiGrapherIII(int x, int y, int w, int h, String title) {
     this.x = x;
     this.y = y;
     this.w = w;
@@ -22,6 +22,8 @@ public class UiGrapherII{
     pNA = 0;
     pointsB = new float[w - edge - numberEdge];
     pNB = 0;
+    pointsC = new float[w - edge - numberEdge];
+    pNC = 0;
     max = 0;
     min = 0;
   }
@@ -52,6 +54,19 @@ public class UiGrapherII{
     }
   }
   
+  void plotC (float p){
+    for (int i = pointsC.length-1; i > 0; i--) {
+      pointsC[i] = pointsC[i-1];
+    }
+    pointsC[0] = p;
+    if (p > max) max = p;
+    if (p < min) min = p;
+    
+    if (pNB < pointsC.length){
+      pNC++;
+    }
+  }
+  
   void render(){
     fill(173, 117, 77);
     rect(x, y, w, h);
@@ -64,6 +79,10 @@ public class UiGrapherII{
     stroke(66, 110, 36);
     for (int i = 0; i < pNB-1; i++) {
       line(x+numberEdge+i, getPosB(i), x+numberEdge+(i+1), getPosB(i+1));
+    }
+    stroke(145, 15, 0);
+    for (int i = 0; i < pNC-1; i++) {
+      line(x+numberEdge+i, getPosC(i), x+numberEdge+(i+1), getPosC(i+1));
     }
     stroke(0);
     strokeWeight(1);
@@ -81,15 +100,23 @@ public class UiGrapherII{
   }
     
   int getPosA(int i) {
-      float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
-      n *= -1;
-      n += x + h - edge;
-      
-      return round(n);
+    float n = map(pointsA[i], min, max, 0, h-edge-titleEdge);
+    n *= -1;
+    n += x + h - edge;
+    
+    return round(n);
   }
     
   int getPosB(int i) {
     float n = map(pointsB[i], min, max, 0, h-edge-titleEdge);
+    n *= -1;
+    n += x + h - edge;
+    
+    return round(n);
+  }
+  
+  int getPosC(int i) {
+    float n = map(pointsC[i], min, max, 0, h-edge-titleEdge);
     n *= -1;
     n += x + h - edge;
     
@@ -101,6 +128,8 @@ public class UiGrapherII{
     pNA = 0;
     pointsB = new float[w - edge - numberEdge];
     pNB = 0;
+    pointsC = new float[w - edge - numberEdge];
+    pNC = 0;
     max = 0;
     min = 0; 
   }

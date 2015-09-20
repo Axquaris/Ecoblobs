@@ -11,14 +11,8 @@ public class UiButton {
   
   public void mousePressed ( float mx, float my ) {
     //Resets simulation when button is pressed
-    movers = new ArrayList<Mover>();
-    for (int i = 0; i < moversCtrl.value*100; i++) movers.add(new Mover(random(DIVSIZE/3,DIVSIZE*1.1),random(sWidth),random(sHeight)));
-    plants = new ArrayList<Plant>();
-    for (int i = 0; i < plantsCtrl.value*20; i++) plants.add(new Plant(random(200, 800),random(sWidth),random(sHeight)));
-    metabolismRate = moversMCtrl.value;
-    growthRate = plantsMCtrl.value;
-    graph.reset();
-    grid.newFlowField();
+    spawnBlobs();
+    updateVars();
     
     pressed = true;
   }
