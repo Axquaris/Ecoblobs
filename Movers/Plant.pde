@@ -23,11 +23,11 @@ class Plant extends Blob{
     
     //Movement
     acceleration = grid.getFlow(location);
-    acceleration.setMag(radius*0.8);
+    acceleration.setMag(radius*0.5);
     acceleration.div(mass);
     
     velocity.add(acceleration);
-    velocity.limit(1);
+    velocity.limit(0.8);
     location.add(velocity);
     
     //Torification
