@@ -81,7 +81,7 @@ class Carnivore extends Mover{
     float strength = 0;
     
     //AI decisions
-    if (distance < 2*(radius + m.radius)) strength = -10/distance/distance;
+    if (distance < 1.5*(radius + m.radius)) strength = -1000/distance/distance;
     
     //Set importance of target
     pointer.mult(strength);
