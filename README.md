@@ -4,15 +4,19 @@
 ### Current Features
   * GUI that allows the user to tweak some simple variables and see the relative total masses of movers and plants
   * Plants that grow at a constant rate and divide when there are not too many plants nearby
-  * Blobs that eat smaller blobs, avoid bigger blobs, eat plants, and divide.
+  * Herbivores that eat eat plants, divide and run from predators.
+  * Carnivores that hunt Herbivores
+  * A realistic balancing-effect between Plants, Herbivores, and Carnivores
   * A torus-shaped world
-  * underwater currents
+  * Underwater currents
 
 ### Plans
   * Sexual reproduction
   * Genetics
   * Speciation
+  * Realistic Physics
   * Realitic balancing (Ecosystems that resemble real ones)
+  * More enviromental influences
 
 ### Want to help?
   Download Processing 2 and add the guido library through Sketch > Import Library > Add Library... 
