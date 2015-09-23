@@ -11,6 +11,7 @@
   * Underwater currents
 
 ### Plans
+  * Full user's guide on program
   * Sexual reproduction
   * Genetics
   * Speciation
